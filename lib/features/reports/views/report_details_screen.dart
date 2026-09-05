@@ -53,10 +53,6 @@ class ReportDetailsScreen extends StatelessWidget {
             _buildReportHeaderCard(context),
             const SizedBox(height: 14),
 
-            // 2. Original Document Source Link
-            _buildOriginalDocumentTrigger(context),
-            const SizedBox(height: 14),
-
             // 3. Plain Language AI Explanation
             _buildAiSummaryCard(context),
             const SizedBox(height: 14),
@@ -87,7 +83,7 @@ class ReportDetailsScreen extends StatelessWidget {
             ...report.parameters.map((param) => _buildParameterItemTile(context, param)),
 
             const SizedBox(height: 16),
-            const SafetyDisclaimerBanner(),
+            const SafetyDisclaimerBanner(compact: true),
             const SizedBox(height: 24),
           ],
         ),
@@ -145,47 +141,6 @@ class ReportDetailsScreen extends StatelessWidget {
             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildOriginalDocumentTrigger(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PdfViewerModal(
-              title: report.title,
-              assetPath: report.pdfAssetPath,
-            ),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.primarySurface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.visibility_outlined, color: AppColors.primary, size: 20),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'View Original Signed Lab Document (PDF)',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: AppColors.primary),
-          ],
-        ),
       ),
     );
   }

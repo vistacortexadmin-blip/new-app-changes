@@ -205,39 +205,6 @@ class ReportsScreen extends ConsumerWidget {
                 '${report.labProvider} · ${report.doctorName}',
                 style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
-              const Divider(height: 20, color: AppColors.divider),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.analytics_outlined, size: 16, color: AppColors.primary),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${report.parameters.length} Parameters Extracted',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Row(
-                    children: [
-                      Text(
-                        'AI Analysis',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.primary),
-                    ],
-                  ),
-                ],
-              ),
             ],
           ),
         ),
@@ -265,7 +232,7 @@ class ReportsScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 6),
               const Text(
-                'Upload PDF or capture physical lab sheets for automated AI transcription and storage.',
+                'Upload a PDF or take a photo of your lab report.',
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
@@ -275,7 +242,7 @@ class ReportsScreen extends ConsumerWidget {
                   child: Icon(Icons.picture_as_pdf_outlined, color: AppColors.primary),
                 ),
                 title: const Text('Choose PDF Document', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: const Text('Files from device storage or SD card', style: TextStyle(fontSize: 11)),
+                subtitle: const Text('From your device', style: TextStyle(fontSize: 11)),
                 onTap: () {
                   Navigator.pop(context);
                   _simulateNewUpload(context, ref, 'Thyroid Profile Free T3/T4', ReportCategory.diabeticPanel);
@@ -287,7 +254,7 @@ class ReportsScreen extends ConsumerWidget {
                   child: Icon(Icons.camera_alt_outlined, color: AppColors.primary),
                 ),
                 title: const Text('Capture with Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                subtitle: const Text('Snap a clear photo of your paper test sheet', style: TextStyle(fontSize: 11)),
+                subtitle: const Text('Take a photo', style: TextStyle(fontSize: 11)),
                 onTap: () {
                   Navigator.pop(context);
                   _simulateNewUpload(context, ref, 'Renal Kidney Function Panel', ReportCategory.generalCheckup);

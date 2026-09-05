@@ -204,43 +204,6 @@ class TestBookingScreen extends ConsumerWidget {
             test.description,
             style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
           ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.info_outline_rounded, size: 14, color: AppColors.primary),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Preparation: ${test.preparationInstruction}',
-                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    const Icon(Icons.timer_outlined, size: 14, color: AppColors.textSecondary),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Report Turnaround: ${test.reportDeliveryTime}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
           const Divider(height: 24, color: AppColors.divider),
           Row(
             children: [

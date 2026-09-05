@@ -31,34 +31,20 @@ class FamilyConnectScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF3E8FF),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: const Color(0xFFD8B4FE)),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.shield_rounded, color: AppColors.accentPurple, size: 24),
-                  SizedBox(width: 12),
+                  Icon(Icons.shield_rounded, color: AppColors.accentPurple, size: 18),
+                  SizedBox(width: 8),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Consent-Based Family Sharing',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                            color: AppColors.accentPurple,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'You maintain 100% control over which family members can view your medicines, reminders, or lab records. Access can be revoked anytime.',
-                          style: TextStyle(fontSize: 11, color: AppColors.textPrimary, height: 1.3),
-                        ),
-                      ],
+                    child: Text(
+                      'You control all sharing. Access can be revoked anytime.',
+                      style: TextStyle(fontSize: 12, color: AppColors.accentPurple, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -85,33 +71,35 @@ class FamilyConnectScreen extends ConsumerWidget {
 
             const SizedBox(height: 20),
 
-            const Text(
-              'Shared Access Audit Log',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
-            const SizedBox(height: 10),
-
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceCard,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: state.activityLogs.length,
-                separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.divider),
-                itemBuilder: (context, index) {
-                  final log = state.activityLogs[index];
-                  return ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.history_toggle_off_rounded, size: 18, color: AppColors.textMuted),
-                    title: Text(log.actionDescription, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                    subtitle: Text('${log.memberName} · ${DateFormat('dd MMM, hh:mm a').format(log.timestamp)}', style: const TextStyle(fontSize: 10)),
-                  );
-                },
-              ),
+            ExpansionTile(
+              title: const Text('Access Audit Log', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              initiallyExpanded: false,
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: EdgeInsets.zero,
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceCard,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: state.activityLogs.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, color: AppColors.divider),
+                    itemBuilder: (context, index) {
+                      final log = state.activityLogs[index];
+                      return ListTile(
+                        dense: true,
+                        leading: const Icon(Icons.history_toggle_off_rounded, size: 18, color: AppColors.textMuted),
+                        title: Text(log.actionDescription, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        subtitle: Text('${log.memberName} · ${DateFormat('dd MMM, hh:mm a').format(log.timestamp)}', style: const TextStyle(fontSize: 10)),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 30),
           ],
@@ -214,23 +202,6 @@ class FamilyConnectScreen extends ConsumerWidget {
                 },
               ),
             ],
-          ),
-          const SizedBox(height: 6),
-
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            dense: true,
-            activeColor: AppColors.primary,
-            title: const Text(
-              'Alert caregiver if critical dose is missed',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            ),
-            value: member.alertOnMissedMedicine,
-            onChanged: (val) {
-              ref
-                  .read(familyConnectProvider.notifier)
-                  .toggleMissedDoseAlert(member.id, val);
-            },
           ),
         ],
       ),

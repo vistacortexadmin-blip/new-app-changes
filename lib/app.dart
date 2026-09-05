@@ -53,61 +53,44 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         index: _currentIndex,
         children: screens,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          border: const Border(
-            top: BorderSide(color: AppColors.border, width: 1),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+        backgroundColor: AppColors.surface,
+        indicatorColor: AppColors.primarySurface,
+        surfaceTintColor: Colors.transparent,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.description_outlined, color: AppColors.textSecondary),
+            selectedIcon: Icon(Icons.description_rounded, color: AppColors.primary),
+            label: 'Reports',
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: NavigationBar(
-            selectedIndex: _currentIndex,
-            onDestinationSelected: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            backgroundColor: AppColors.surface,
-            indicatorColor: AppColors.primarySurface,
-            surfaceTintColor: Colors.transparent,
-            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-            destinations: const [
-              NavigationDestination(
-                icon: Icon(Icons.description_outlined, color: AppColors.textSecondary),
-                selectedIcon: Icon(Icons.description_rounded, color: AppColors.primary),
-                label: 'Reports',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.alarm_outlined, color: AppColors.textSecondary),
-                selectedIcon: Icon(Icons.alarm_rounded, color: AppColors.primary),
-                label: 'Reminders',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.home_outlined, color: AppColors.textSecondary),
-                selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
-                label: 'Dashboard',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.healing_outlined, color: AppColors.textSecondary),
-                selectedIcon: Icon(Icons.healing_rounded, color: AppColors.primary),
-                label: 'Care & Diet',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.calendar_month_outlined, color: AppColors.textSecondary),
-                selectedIcon: Icon(Icons.calendar_month_rounded, color: AppColors.primary),
-                label: 'Book Tests',
-              ),
-            ],
+          NavigationDestination(
+            icon: Icon(Icons.medication_outlined, color: AppColors.textSecondary),
+            selectedIcon: Icon(Icons.medication_rounded, color: AppColors.primary),
+            label: 'Meds',
           ),
-        ),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined, color: AppColors.textSecondary),
+            selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.healing_outlined, color: AppColors.textSecondary),
+            selectedIcon: Icon(Icons.healing_rounded, color: AppColors.primary),
+            label: 'Care',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined, color: AppColors.textSecondary),
+            selectedIcon: Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+            label: 'Book',
+          ),
+        ],
       ),
     );
   }

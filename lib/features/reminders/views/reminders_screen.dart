@@ -45,9 +45,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: [
-            Tab(text: "Today's Doses (${remindersState.pendingDosesTodayCount})"),
-            Tab(text: "Refills (${remindersState.lowSupplyMedicines.length})"),
-            const Tab(text: "Next Tests"),
+            const Tab(text: 'Doses'),
+            const Tab(text: 'Refills'),
+            const Tab(text: 'Tests'),
           ],
         ),
       ),
@@ -146,10 +146,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   Text(
                     'Dosage: ${med.dosage} · ${med.instructions}',
                     style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                  ),
-                  Text(
-                    'Prescribed For: ${med.prescribedFor}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
                   ),
                   const Divider(height: 24, color: AppColors.divider),
 
@@ -260,28 +256,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.infoSurface,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.info.withOpacity(0.3)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.inventory_2_outlined, color: AppColors.info, size: 24),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'VistaCortex tracks your available tablet inventory and calculates exact days remaining before you run out.',
-                    style: TextStyle(fontSize: 12, color: AppColors.textPrimary, height: 1.4),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
           ...state.medicines.map((med) {
             final isLow = med.isLowSupply;
             final isCritical = med.isCriticalSupply;
@@ -360,14 +334,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     ),
                   ),
                   const Divider(height: 20, color: AppColors.divider),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.add_shopping_cart_rounded, size: 16),
-                      label: const Text('Record Refill (+30 Pills)'),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isLow ? AppColors.primary : AppColors.textSecondary,
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                       onPressed: () {
                         ref.read(remindersProvider.notifier).refillStock(
@@ -378,6 +350,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           SnackBar(content: Text('Added +30 units to ${med.medicineName} inventory.')),
                         );
                       },
+                      child: const Text('+30 Refill', style: TextStyle(color: Colors.white)),
                     ),
                   ),
                 ],
@@ -450,18 +423,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   Text(
                     'Scheduled for: ${DateFormat('EEE, dd MMM yyyy').format(test.scheduledDate)}',
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Prep: ${test.preparationInstructions}',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-                    ),
                   ),
                   if (!test.isCompleted) ...[
                     const Divider(height: 20, color: AppColors.divider),

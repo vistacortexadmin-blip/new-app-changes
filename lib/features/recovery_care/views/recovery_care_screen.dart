@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_colors.dart';
 import '../providers/recovery_diet_provider.dart';
-import '../models/recovery_model.dart';
 
 class RecoveryCareScreen extends ConsumerStatefulWidget {
   const RecoveryCareScreen({super.key});
@@ -44,8 +43,8 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen>
           indicatorWeight: 3,
           labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
           tabs: const [
-            Tab(text: 'Surgery Care Protocol'),
-            Tab(text: 'Clinical Diet Plan'),
+            Tab(text: 'Recovery'),
+            Tab(text: 'Diet'),
           ],
         ),
       ),
@@ -114,11 +113,6 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen>
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  '${plan.hospitalName} · Surgeon: ${plan.operatingSurgeon}',
-                  style: const TextStyle(color: Color(0xFFDCEFE4), fontSize: 11),
-                ),
-                const SizedBox(height: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
@@ -171,8 +165,8 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen>
                         ref.read(recoveryDietProvider.notifier).updatePainScore(score);
                       },
                       child: Container(
-                        width: 28,
-                        height: 28,
+                        width: 32,
+                        height: 32,
                         decoration: BoxDecoration(
                           color: isSelected ? AppColors.primary : AppColors.surface,
                           shape: BoxShape.circle,
@@ -240,10 +234,6 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen>
                       decoration: task.isCompleted ? TextDecoration.lineThrough : null,
                       color: task.isCompleted ? AppColors.textSecondary : AppColors.textPrimary,
                     ),
-                  ),
-                  subtitle: Text(
-                    '${task.timeOfDay} · ${task.description}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                 ),
               ),
