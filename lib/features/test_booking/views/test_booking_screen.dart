@@ -1,412 +1,382 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import '../../../core/config/app_colors.dart';
-import '../providers/test_booking_provider.dart';
-import '../models/test_booking_model.dart';
+
 
 class TestBookingScreen extends ConsumerWidget {
   const TestBookingScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(testBookingProvider);
-    final tests = state.filteredTests;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
-        title: const Text('Diagnostic Test Booking'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Test Booking',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            Text(
+              'Book lab tests from trusted partners.',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.receipt_long_outlined, color: AppColors.textPrimary),
+            onPressed: () {},
+          ),
+        ],
       ),
-      body: Column(
-        children: [
-          Container(
-            color: AppColors.background,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextField(
-              onChanged: (val) =>
-                  ref.read(testBookingProvider.notifier).setSearchQuery(val),
-              decoration: InputDecoration(
-                hintText: 'Search tests (e.g. Lipid, Thyroid, HbA1c)...',
-                prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.primary),
-                filled: true,
-                fillColor: AppColors.surface,
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.border),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 1. Search Bar matching Screen 7
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const TextField(
+                decoration: InputDecoration(
+                  icon: Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
+                  hintText: 'Search for tests (e.g. CBC, MRI, Sugar)...',
+                  hintStyle: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
-          ),
+            const SizedBox(height: 22),
 
-          Container(
-            color: AppColors.background,
-            height: 48,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            // 2. Popular Tests Row matching Screen 7
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildCategoryChip(
-                  context,
-                  ref,
-                  label: 'All Tests',
-                  isSelected: state.selectedCategory == null,
-                  onSelected: () =>
-                      ref.read(testBookingProvider.notifier).selectCategory(null),
+                const Text(
+                  'Popular Tests',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
-                _buildCategoryChip(
-                  context,
-                  ref,
-                  label: 'Blood & Metabolic',
-                  isSelected: state.selectedCategory == 'Blood & Metabolic',
-                  onSelected: () => ref
-                      .read(testBookingProvider.notifier)
-                      .selectCategory('Blood & Metabolic'),
-                ),
-                _buildCategoryChip(
-                  context,
-                  ref,
-                  label: 'Diabetic Health',
-                  isSelected: state.selectedCategory == 'Diabetic Health',
-                  onSelected: () => ref
-                      .read(testBookingProvider.notifier)
-                      .selectCategory('Diabetic Health'),
-                ),
-                _buildCategoryChip(
-                  context,
-                  ref,
-                  label: 'Endocrinology',
-                  isSelected: state.selectedCategory == 'Endocrinology',
-                  onSelected: () => ref
-                      .read(testBookingProvider.notifier)
-                      .selectCategory('Endocrinology'),
-                ),
-                _buildCategoryChip(
-                  context,
-                  ref,
-                  label: 'Vital Vitamins',
-                  isSelected: state.selectedCategory == 'Vital Vitamins',
-                  onSelected: () => ref
-                      .read(testBookingProvider.notifier)
-                      .selectCategory('Vital Vitamins'),
+                GestureDetector(
+                  onTap: () {},
+                  child: const Text(
+                    'View All',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
-          const Divider(height: 1, color: AppColors.divider),
+            const SizedBox(height: 14),
 
-          Expanded(
-            child: tests.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No diagnostic tests matching query.',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: tests.length,
-                    itemBuilder: (context, index) {
-                      final test = tests[index];
-                      return _buildTestCard(context, ref, test, state.providers);
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
+            // 4 Circular Test Categories
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildPopularTestItem(
+                  label: 'Full Body\nCheckup',
+                  icon: Icons.health_and_safety_outlined,
+                  iconColor: const Color(0xFF2563EB),
+                  bgColor: const Color(0xFFEFF6FF),
+                ),
+                _buildPopularTestItem(
+                  label: 'Blood Test\n ',
+                  icon: Icons.water_drop_outlined,
+                  iconColor: const Color(0xFFEF4444),
+                  bgColor: const Color(0xFFFEE2E2),
+                ),
+                _buildPopularTestItem(
+                  label: 'Thyroid Test\n ',
+                  icon: Icons.science_outlined,
+                  iconColor: const Color(0xFF8B5CF6),
+                  bgColor: const Color(0xFFF5F3FF),
+                ),
+                _buildPopularTestItem(
+                  label: 'Vitamin D\n ',
+                  icon: Icons.wb_sunny_outlined,
+                  iconColor: const Color(0xFF6366F1),
+                  bgColor: const Color(0xFFEEF2FF),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
 
-  Widget _buildCategoryChip(
-    BuildContext context,
-    WidgetRef ref, {
-    required String label,
-    required bool isSelected,
-    required VoidCallback onSelected,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: FilterChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (_) => onSelected(),
-        selectedColor: AppColors.primarySurface,
-        labelStyle: TextStyle(
-          fontSize: 11,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          color: isSelected ? AppColors.primaryDark : AppColors.textSecondary,
-        ),
-        backgroundColor: AppColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: isSelected ? AppColors.primary : AppColors.border,
-          ),
-        ),
-      ),
-    );
-  }
+            // 3. Nearby Labs Section Header
+            const Text(
+              'Nearby Labs',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 14),
 
-  Widget _buildTestCard(BuildContext context, WidgetRef ref, BookableTest test,
-      List<DiagnosticProvider> providers) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  test.category,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primaryDark,
-                  ),
-                ),
-              ),
-              Text(
-                '₹${test.price.toInt()}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.primaryDark,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            test.name,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            test.description,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.3),
-          ),
-          const Divider(height: 24, color: AppColors.divider),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  '${test.includedParameters.length} Parameters included',
-                  style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
-                ),
-              ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                ),
-                onPressed: () {
-                  _showSelectProviderAndSlotModal(context, ref, test, providers);
-                },
-                child: const Text('Book Test Slot'),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+            // Nearby Labs list matching Screen 7
+            _buildLabCard(
+              name: 'Apollo Diagnostics',
+              distance: '2.3 km',
+              rating: '4.8',
+              logoColor: const Color(0xFF0D9488),
+              onBook: () => _showBookingSheet(context, ref, 'Apollo Diagnostics'),
+            ),
+            _buildLabCard(
+              name: 'Thyrocare',
+              distance: '3.1 km',
+              rating: '4.6',
+              logoColor: const Color(0xFFEF4444),
+              onBook: () => _showBookingSheet(context, ref, 'Thyrocare'),
+            ),
+            _buildLabCard(
+              name: 'Dr. Lal PathLabs',
+              distance: '4.0 km',
+              rating: '4.5',
+              logoColor: const Color(0xFFF59E0B),
+              onBook: () => _showBookingSheet(context, ref, 'Dr. Lal PathLabs'),
+            ),
+            _buildLabCard(
+              name: 'MedPlus Diagnostics',
+              distance: '4.5 km',
+              rating: '4.4',
+              logoColor: const Color(0xFF10B981),
+              onBook: () => _showBookingSheet(context, ref, 'MedPlus Diagnostics'),
+            ),
+            const SizedBox(height: 18),
 
-  void _showSelectProviderAndSlotModal(
-    BuildContext context,
-    WidgetRef ref,
-    BookableTest test,
-    List<DiagnosticProvider> providers,
-  ) {
-    DiagnosticProvider selectedProvider = providers.first;
-    DateTime selectedDate = DateTime.now().add(const Duration(days: 2));
-    String selectedSlot = '08:00 AM - 09:00 AM';
-    bool isHomeCollection = true;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                top: 24,
-                left: 24,
-                right: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+            // 4. Bottom Encouragement Card matching Screen 7
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: const Color(0xFFECFDF5),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFFA7F3D0)),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Book: ${test.name}',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  const Text(
+                    'Accurate tests.\nA healthier you.',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF065F46),
+                      height: 1.3,
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Total Price: ₹${test.price.toInt()} (Includes digital report delivery)',
-                    style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-
-                  const Text('Select Participating Lab Provider:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<DiagnosticProvider>(
-                    value: selectedProvider,
-                    dropdownColor: AppColors.surface,
-                    isExpanded: true,
-                    items: providers.map((prov) {
-                      return DropdownMenuItem(
-                        value: prov,
-                        child: Text(
-                          '${prov.name} (${prov.distanceKm} km · ⭐ ${prov.rating})',
-                          style: const TextStyle(fontSize: 12),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() => selectedProvider = val);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 14),
-
-                  const Text('Preferred Time Slot:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                  const SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: selectedSlot,
-                    dropdownColor: AppColors.surface,
-                    items: const [
-                      DropdownMenuItem(value: '07:30 AM - 08:30 AM (Fasting Slot)', child: Text('07:30 AM - 08:30 AM (Fasting)')),
-                      DropdownMenuItem(value: '08:00 AM - 09:00 AM', child: Text('08:00 AM - 09:00 AM')),
-                      DropdownMenuItem(value: '09:00 AM - 10:00 AM', child: Text('09:00 AM - 10:00 AM')),
-                      DropdownMenuItem(value: '10:30 AM - 11:30 AM', child: Text('10:30 AM - 11:30 AM')),
-                    ],
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() => selectedSlot = val);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 10),
-
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    dense: true,
-                    activeColor: AppColors.primary,
-                    title: const Text('Free Home Sample Collection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    subtitle: const Text('Phlebotomist visits home at designated slot', style: TextStyle(fontSize: 11)),
-                    value: isHomeCollection,
-                    onChanged: (val) {
-                      setModalState(() => isHomeCollection = val);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        final order = ref.read(testBookingProvider.notifier).confirmBooking(
-                              test: test,
-                              provider: selectedProvider,
-                              date: selectedDate,
-                              timeSlot: selectedSlot,
-                              isHomeCollection: isHomeCollection,
-                            );
-
-                        _showBookingSuccessDialog(context, order);
-                      },
-                      child: const Text('Confirm & Schedule Slot'),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.volunteer_activism_rounded,
+                      color: Color(0xFF10B981),
+                      size: 22,
                     ),
                   ),
                 ],
               ),
-            );
-          },
-        );
-      },
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
     );
   }
 
-  void _showBookingSuccessDialog(BuildContext context, TestBookingOrder order) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.check_circle_rounded, color: AppColors.success, size: 24),
-              SizedBox(width: 8),
-              Text('Booking Confirmed!'),
-            ],
+  Widget _buildPopularTestItem({
+    required String label,
+    required IconData icon,
+    required Color iconColor,
+    required Color bgColor,
+  }) {
+    return Column(
+      children: [
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: bgColor,
+            shape: BoxShape.circle,
           ),
-          content: Column(
+          child: Icon(icon, color: iconColor, size: 26),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+            height: 1.2,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLabCard({
+    required String name,
+    required String distance,
+    required String rating,
+    required Color logoColor,
+    required VoidCallback onBook,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: logoColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(Icons.local_hospital_rounded, color: logoColor, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      distance,
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.star_rounded, size: 14, color: Color(0xFFF59E0B)),
+                    const SizedBox(width: 2),
+                    Text(
+                      rating,
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
+            onPressed: onBook,
+            child: const Text('Book', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBookingSheet(BuildContext context, WidgetRef ref, String labName) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Order ID: ${order.orderId}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-              const SizedBox(height: 8),
-              Text('Test: ${order.test.name}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-              Text('Provider: ${order.provider.name}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-              Text('Date & Slot: ${DateFormat('dd MMM yyyy').format(order.scheduledDate)} at ${order.timeSlot}', style: const TextStyle(fontSize: 12)),
-              const Divider(height: 20, color: AppColors.divider),
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.infoSurface,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.alarm_on_rounded, size: 16, color: AppColors.info),
-                    SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'Automatically added to your Next-Test Reminder engine!',
-                        style: TextStyle(fontSize: 11, color: AppColors.info, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ],
+              Text(
+                'Book at $labName',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Select a slot for your recommended CBC & Lipid test.',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 18),
+              const ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: Icon(Icons.home_outlined, color: AppColors.primary),
+                title: Text('Free Home Sample Collection', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                subtitle: Text('Phlebotomist arrives at your home address', style: TextStyle(fontSize: 12)),
+                trailing: Icon(Icons.check_circle_rounded, color: Color(0xFF10B981)),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Test slot confirmed at $labName! Added to reminders.')),
+                    );
+                  },
+                  child: const Text('Confirm Booking'),
                 ),
               ),
             ],
           ),
-          actions: [
-            ElevatedButton(
-              child: const Text('Done'),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
         );
       },
     );
