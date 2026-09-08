@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/app_colors.dart';
-import '../../../app.dart';
+import 'login_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -95,7 +95,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
 
-                  // 3. Get Started Button
+                  // 3. Continue Button
                   SizedBox(
                     width: double.infinity,
                     height: 54,
@@ -110,50 +110,19 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
-                        Navigator.pushReplacement(
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const MainNavigationShell(),
+                            builder: (context) => const LoginScreen(),
                           ),
                         );
                       },
                       child: const Text(
-                        'Get Started',
+                        'Continue',
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-
-                  // 4. Sign In Link
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const MainNavigationShell(),
-                        ),
-                      );
-                    },
-                    child: RichText(
-                      text: const TextSpan(
-                        text: 'Already have an account? ',
-                        style: TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 14,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Sign In',
-                            style: TextStyle(
-                              color: Color(0xFF60A5FA),
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
