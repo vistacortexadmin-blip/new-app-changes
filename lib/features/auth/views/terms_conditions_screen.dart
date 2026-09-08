@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/app_colors.dart';
+import '../../../core/services/analytics_service.dart';
 import 'profile_setup_screen.dart';
 
 class TermsConditionsScreen extends StatefulWidget {
@@ -11,6 +12,13 @@ class TermsConditionsScreen extends StatefulWidget {
 
 class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
   bool _accepted = false;
+  final _analytics = AnalyticsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _analytics.logScreen('terms_conditions_screen');
+  }
 
   @override
   Widget build(BuildContext context) {

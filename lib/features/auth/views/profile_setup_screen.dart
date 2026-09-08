@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/app_colors.dart';
+import '../../../core/services/analytics_service.dart';
 import '../../../app.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -15,6 +16,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _ageController = TextEditingController();
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
+  final _analytics = AnalyticsService();
 
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'Select';
@@ -23,6 +25,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   final List<String> _genders = ['Male', 'Female', 'Other', 'Prefer not to say'];
   final List<String> _bloodGroups = ['Select', 'A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'];
+
+  @override
+  void initState() {
+    super.initState();
+    _analytics.logScreen('profile_setup_screen');
+  }
 
   @override
   void dispose() {
@@ -35,6 +43,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   void _continue() {
     if (_formKey.currentState?.validate() ?? false) {
+      _analytics.logEvent('profile_completed', {
+        'has_name': _nameController.text.isNotEmpty,
+        'gender': _selectedGender,
+        'has_family_sync': _syncFamily,
+      });
+
       // Navigate to Dashboard, clearing entire navigation stack
       Navigator.pushAndRemoveUntil(
         context,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/app_colors.dart';
+import '../../../core/services/analytics_service.dart';
 import 'terms_conditions_screen.dart';
 
 class PrivacyPolicyScreen extends StatefulWidget {
@@ -11,6 +12,13 @@ class PrivacyPolicyScreen extends StatefulWidget {
 
 class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
   bool _accepted = false;
+  final _analytics = AnalyticsService();
+
+  @override
+  void initState() {
+    super.initState();
+    _analytics.logScreen('privacy_policy_screen');
+  }
 
   @override
   Widget build(BuildContext context) {
