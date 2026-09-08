@@ -619,7 +619,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           testName: nameController.text,
                           labOrClinicName: labController.text.isEmpty ? 'TBD Clinic' : labController.text,
                           scheduledDate: DateTime.now().add(Duration(days: daysFromNow)),
-                          preparationInstructions: prepController.text.isEmpty ? null : prepController.text,
+                          preparationInstructions: prepController.text,
                           isCompleted: false,
                         );
 
