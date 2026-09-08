@@ -14,7 +14,7 @@ class SeedData {
           labProvider: 'Apollo Diagnostic Specialty Labs',
           doctorName: 'Dr. Arvind Sharma, MD (Cardiology)',
           reportDate: DateTime.now().subtract(const Duration(days: 3)),
-          pdfAssetPath: 'assets/documents/sample_report.pdf',
+          pdfAssetPath: '',
           summaryPlainLanguage:
               'Your total cholesterol and LDL (bad cholesterol) have decreased by 14% compared to last month following your statin routine. Fasting blood sugar is stable and within normal target range.',
           questionsForDoctor: [
@@ -78,7 +78,7 @@ class SeedData {
           labProvider: 'MaxCare Path Labs Ltd.',
           doctorName: 'Dr. Priya Desai, MD (Internal Medicine)',
           reportDate: DateTime.now().subtract(const Duration(days: 28)),
-          pdfAssetPath: 'assets/documents/sample_report.pdf',
+          pdfAssetPath: '',
           summaryPlainLanguage:
               'Hemoglobin and platelet levels are healthy. White blood cell count indicates normal immune function with no signs of acute infection.',
           questionsForDoctor: [
@@ -132,7 +132,7 @@ class SeedData {
           labProvider: 'Quest Diagnostic Center',
           doctorName: 'Dr. Rajiv Menon, Endocrinologist',
           reportDate: DateTime.now().subtract(const Duration(days: 65)),
-          pdfAssetPath: 'assets/documents/sample_report.pdf',
+          pdfAssetPath: '',
           summaryPlainLanguage:
               'HbA1c level is 5.8%, reflecting stable glucose regulation over the prior 90-day period without hypoglycemic episodes.',
           questionsForDoctor: [
