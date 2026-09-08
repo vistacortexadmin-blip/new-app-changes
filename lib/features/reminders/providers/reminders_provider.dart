@@ -29,6 +29,19 @@ class RemindersState {
     return count;
   }
 
+  double get adherencePercentage {
+    int total = 0;
+    int taken = 0;
+    for (final med in medicines) {
+      for (final schedule in med.dailySchedules) {
+        total++;
+        if (schedule.status == AdherenceStatus.taken) taken++;
+      }
+    }
+    if (total == 0) return 0.0;
+    return taken / total;
+  }
+
   RemindersState copyWith({
     List<MedicineReminder>? medicines,
     List<NextTestReminder>? nextTests,
@@ -122,6 +135,10 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     }).toList();
 
     state = state.copyWith(medicines: updatedMedicines);
+  }
+
+  void addMedicineReminder(MedicineReminder reminder) {
+    state = state.copyWith(medicines: [reminder, ...state.medicines]);
   }
 
   void addNextTestReminder(NextTestReminder reminder) {
