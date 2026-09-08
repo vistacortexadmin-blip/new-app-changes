@@ -82,7 +82,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.add, color: Colors.white, size: 24),
-                      onPressed: () => _showAddMedicineModal(context),
+                      onPressed: () => _showAddActionSheet(context),
                     ),
                   ),
                 ],
@@ -132,7 +132,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       children: [
         const SizedBox(height: 16),
 
-        // Adherence Ring & 7-Day Streak
+        // Adherence Ring
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -141,112 +141,59 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
           ),
-          child: Column(
+          child: Row(
             children: [
-              Row(
-                children: [
-                  SizedBox(
-                    width: 60,
-                    height: 60,
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        CircularProgressIndicator(
-                          value: adherence,
-                          strokeWidth: 6,
-                          backgroundColor: AppColors.border,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            adherence >= 0.8
-                                ? AppColors.success
-                                : AppColors.warning,
-                          ),
-                        ),
-                        Center(
-                          child: Text(
-                            '${(adherence * 100).toInt()}%',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ),
-                      ],
+              SizedBox(
+                width: 60,
+                height: 60,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    CircularProgressIndicator(
+                      value: adherence,
+                      strokeWidth: 6,
+                      backgroundColor: AppColors.border,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        adherence >= 0.8
+                            ? AppColors.success
+                            : AppColors.warning,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Daily Adherence',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Keep up the great work! Consistency is key.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Divider(color: AppColors.border, height: 1),
-              ),
-              // 7-Day Streak
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: List.generate(7, (index) {
-                  final isToday = index == 6;
-                  final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-                  
-                  // Mocked streak history (True = Green, False = Red)
-                  // Let's pretend they did well all week except Thursday
-                  final bool streakStatus = isToday 
-                      ? (adherence >= 0.8) 
-                      : (index != 3); 
-
-                  return Column(
-                    children: [
-                      Text(
-                        days[index],
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                          color: isToday ? AppColors.textPrimary : AppColors.textSecondary,
+                    Center(
+                      child: Text(
+                        '${(adherence * 100).toInt()}%',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Container(
-                        width: 24,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: streakStatus ? AppColors.successSurface : AppColors.errorSurface,
-                          border: Border.all(
-                            color: streakStatus ? AppColors.success : AppColors.error,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Icon(
-                          streakStatus ? Icons.check : Icons.close,
-                          size: 14,
-                          color: streakStatus ? AppColors.success : AppColors.error,
-                        ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Daily Adherence',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
                       ),
-                    ],
-                  );
-                }),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Keep up the great work! Consistency is key.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
@@ -324,15 +271,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   List<Widget> _buildMedicineCards(RemindersState state) {
     List<Widget> cards = [];
     final selectedTime = state.selectedTimeFilter;
-    
-    int pendingCount = 0;
 
     for (var med in state.medicines) {
       for (var schedule in med.dailySchedules) {
         if (schedule.timeOfDay == selectedTime) {
-          if (schedule.status == AdherenceStatus.pending) {
-            pendingCount++;
-          }
           cards.add(_buildMedicineCard(med, schedule));
           cards.add(const SizedBox(height: 12));
         }
@@ -346,37 +288,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           child: Text('No medicines scheduled for this time.'),
         ),
       ));
-    } else if (pendingCount > 1) {
-      // Add the 'Take All' button at the top
-      cards.insert(
-        0,
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () {
-                ref
-                    .read(remindersProvider.notifier)
-                    .markAllDosesTaken(selectedTime!);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Marked all $pendingCount doses as taken!')),
-                );
-              },
-              icon: const Icon(Icons.check_circle_outline),
-              label: Text('Take All ${selectedTime.toString().split('.').last} Doses ($pendingCount)'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
     }
 
     return cards;
@@ -390,17 +301,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     bool isTaken = schedule.status == AdherenceStatus.taken;
     bool isSkipped = schedule.status == AdherenceStatus.skipped;
 
-    IconData getIconForDosage(String dosage) {
-      final lower = dosage.toLowerCase();
-      if (lower.contains('syrup') || lower.contains('liquid') || lower.contains('ml')) {
-        return Icons.water_drop;
-      }
-      if (lower.contains('injection') || lower.contains('insulin')) {
-        return Icons.vaccines;
-      }
-      return Icons.medication_rounded;
-    }
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -412,7 +312,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       child: Column(
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 44,
@@ -421,7 +320,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   color: AppColors.primarySurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(getIconForDosage(med.dosage),
+                child: const Icon(Icons.medication_rounded,
                     color: AppColors.primary, size: 22),
               ),
               const SizedBox(width: 14),
@@ -438,46 +337,22 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Text(
-                          med.dosage,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text('•', style: TextStyle(color: AppColors.border)),
-                        const SizedBox(width: 8),
-                        Text(
-                          schedule.timeString,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (med.warning != null) ...[
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.errorSurface.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          med.warning!,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.error,
-                          ),
-                        ),
+                    Text(
+                      med.dosage,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
                       ),
-                    ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      schedule.timeString,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -598,6 +473,177 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
               child: const Text('Submit'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Action Sheet (Choose Medicine or Test)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  void _showAddActionSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'What would you like to add?',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 24),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.primarySurface,
+                    child: Icon(Icons.medication, color: AppColors.primary),
+                  ),
+                  title: const Text('Add Medicine Reminder'),
+                  subtitle: const Text('Schedule a pill, syrup, or injection'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showAddMedicineModal(context);
+                  },
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const CircleAvatar(
+                    backgroundColor: AppColors.infoSurface,
+                    child: Icon(Icons.science, color: AppColors.info),
+                  ),
+                  title: const Text('Schedule Diagnostic Test'),
+                  subtitle: const Text('Add a lab test, scan, or checkup'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showAddTestModal(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Add Test Modal
+  // ──────────────────────────────────────────────────────────────────────────
+
+  void _showAddTestModal(BuildContext context) {
+    final nameController = TextEditingController();
+    final labController = TextEditingController();
+    final prepController = TextEditingController();
+    int daysFromNow = 7;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Schedule Test',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration:
+                        const InputDecoration(labelText: 'Test Name (e.g. Blood Test)'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: labController,
+                    decoration: const InputDecoration(
+                        labelText: 'Clinic / Lab Name'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: prepController,
+                    decoration: const InputDecoration(
+                        labelText: 'Preparation (e.g. 12h fasting)'),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Text('When?  ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Expanded(
+                        child: Slider(
+                          value: daysFromNow.toDouble(),
+                          min: 1,
+                          max: 30,
+                          divisions: 29,
+                          label: 'In $daysFromNow Days',
+                          onChanged: (val) {
+                            setModalState(() {
+                              daysFromNow = val.toInt();
+                            });
+                          },
+                        ),
+                      ),
+                      Text('In $daysFromNow d'),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (nameController.text.isEmpty) {
+                          return;
+                        }
+
+                        final test = NextTestReminder(
+                          id: const Uuid().v4(),
+                          testName: nameController.text,
+                          labOrClinicName: labController.text.isEmpty ? 'TBD Clinic' : labController.text,
+                          scheduledDate: DateTime.now().add(Duration(days: daysFromNow)),
+                          preparationInstructions: prepController.text.isEmpty ? null : prepController.text,
+                          isCompleted: false,
+                        );
+
+                        ref
+                            .read(remindersProvider.notifier)
+                            .addNextTestReminder(test);
+
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Diagnostic test scheduled!')),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.info,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Save Test'),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

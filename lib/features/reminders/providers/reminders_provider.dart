@@ -169,8 +169,11 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
   }
 
   void addMedicineReminder(MedicineReminder reminder) {
-    state = state.copyWith(medicines: [reminder, ...state.medicines]);
+    state = state.copyWith(
+      medicines: [...state.medicines, reminder],
+    );
   }
+
 
   void addNextTestReminder(NextTestReminder reminder) {
     state = state.copyWith(nextTests: [reminder, ...state.nextTests]);
