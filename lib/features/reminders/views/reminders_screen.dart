@@ -541,7 +541,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     final nameController = TextEditingController();
     final labController = TextEditingController();
     final prepController = TextEditingController();
-    int daysFromNow = 7;
+    DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
 
     showModalBottomSheet(
       context: context,
@@ -588,21 +588,28 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   Row(
                     children: [
                       const Text('When?  ', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child: Slider(
-                          value: daysFromNow.toDouble(),
-                          min: 1,
-                          max: 30,
-                          divisions: 29,
-                          label: 'In $daysFromNow Days',
-                          onChanged: (val) {
-                            setModalState(() {
-                              daysFromNow = val.toInt();
-                            });
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                            );
+                            if (picked != null) {
+                              setModalState(() {
+                                selectedDate = picked;
+                              });
+                            }
                           },
+                          icon: const Icon(Icons.calendar_month),
+                          label: Text(
+                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                          ),
                         ),
                       ),
-                      Text('In $daysFromNow d'),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -618,7 +625,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           id: const Uuid().v4(),
                           testName: nameController.text,
                           labOrClinicName: labController.text.isEmpty ? 'TBD Clinic' : labController.text,
-                          scheduledDate: DateTime.now().add(Duration(days: daysFromNow)),
+                          scheduledDate: selectedDate,
                           preparationInstructions: prepController.text,
                           isCompleted: false,
                         );
@@ -657,6 +664,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     final nameController = TextEditingController();
     final dosageController = TextEditingController();
     final timeController = TextEditingController();
+    final totalPillsController = TextEditingController(text: '30');
+    final pillsPerDayController = TextEditingController(text: '1');
     DoseTimeOfDay selectedTime = DoseTimeOfDay.morning;
 
     showModalBottomSheet(
@@ -676,75 +685,101 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 top: 24,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Add Medicine',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Medicine Name'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: dosageController,
-                    decoration: const InputDecoration(
-                        labelText: 'Dosage (e.g., 500mg)'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: timeController,
-                    decoration: const InputDecoration(
-                        labelText: 'Time (e.g. 08:00 AM)'),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<DoseTimeOfDay>(
-                    initialValue: selectedTime,
-                    decoration:
-                        const InputDecoration(labelText: 'Time of Day'),
-                    items: DoseTimeOfDay.values.map((time) {
-                      return DropdownMenuItem(
-                        value: time,
-                        child: Text(time.toString().split('.').last),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() => selectedTime = val);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (nameController.text.isEmpty ||
-                            timeController.text.isEmpty) {
-                          return;
-                        }
-
-                        final reminder = MedicineReminder(
-                          id: const Uuid().v4(),
-                          medicineName: nameController.text,
-                          dosage: dosageController.text,
-                          instructions: '',
-                          prescribedFor: '',
-                          dailySchedules: [
-                            DoseSchedule(
-                              timeOfDay: selectedTime,
-                              timeString: timeController.text,
-                            )
-                          ],
-                          totalQuantityAvailable: 30,
-                          dailyDoseCount: 1,
-                          startDate: DateTime.now(),
-                          durationDays: 30,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Add Medicine',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      decoration:
+                          const InputDecoration(labelText: 'Medicine Name'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: dosageController,
+                      decoration: const InputDecoration(
+                          labelText: 'Dosage (e.g., 500mg)'),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: totalPillsController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                labelText: 'Total Pills Box'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: pillsPerDayController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                                labelText: 'Pills Per Day'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: timeController,
+                      decoration: const InputDecoration(
+                          labelText: 'Time (e.g. 08:00 AM)'),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<DoseTimeOfDay>(
+                      initialValue: selectedTime,
+                      decoration:
+                          const InputDecoration(labelText: 'Time of Day'),
+                      items: DoseTimeOfDay.values.map((time) {
+                        return DropdownMenuItem(
+                          value: time,
+                          child: Text(time.toString().split('.').last),
                         );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setModalState(() => selectedTime = val);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (nameController.text.isEmpty ||
+                              timeController.text.isEmpty) {
+                            return;
+                          }
+  
+                          int totalPills = int.tryParse(totalPillsController.text) ?? 30;
+                          int dailyDose = int.tryParse(pillsPerDayController.text) ?? 1;
+  
+                          final reminder = MedicineReminder(
+                            id: const Uuid().v4(),
+                            medicineName: nameController.text,
+                            dosage: dosageController.text,
+                            instructions: '',
+                            prescribedFor: '',
+                            dailySchedules: [
+                              DoseSchedule(
+                                timeOfDay: selectedTime,
+                                timeString: timeController.text,
+                              )
+                            ],
+                            totalQuantityAvailable: totalPills,
+                            dailyDoseCount: dailyDose,
+                            startDate: DateTime.now(),
+                            durationDays: 30,
+                          );
 
                         ref
                             .read(remindersProvider.notifier)
@@ -759,7 +794,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       child: const Text('Save Reminder'),
                     ),
                   ),
-                ],
+                ),
               ),
             );
           },
