@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_colors.dart';
+import '../../../core/security/security_audit_model.dart';
+import '../../../core/security/security_audit_service.dart';
 
 
 class FamilyConnectScreen extends ConsumerStatefulWidget {
@@ -402,9 +404,19 @@ class _FamilyConnectScreenState extends ConsumerState<FamilyConnectScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
+                    SecurityAuditService().record(
+                      actionType: AuditActionType.familyCaregiverInvited,
+                      resourceType: AuditResourceType.familyAccessControl,
+                      resourceId: 'caregiver_invite',
+                      dataClassification: DataClassification.pii,
+                      metadata: {
+                        'action': 'caregiver_invitation_sent',
+                        'channel': 'sms_direct_invite',
+                      },
+                    );
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Caregiver invite link generated!')),
+                      const SnackBar(content: Text('Caregiver invite link generated & recorded in Security Audit!')),
                     );
                   },
                   child: const Text('Send Invitation'),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../core/config/app_colors.dart';
+import '../../../core/security/security_audit_model.dart';
+import '../../../core/security/security_audit_service.dart';
 import '../models/report_model.dart';
 import 'pdf_view_modal.dart';
 import 'parameter_trend_screen.dart';
@@ -24,6 +26,18 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen>
     super.initState();
     // Default to 'Analysis' tab (index 1) as seen prominently in Screen 4
     _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
+
+    // Record HIPAA Security Audit Event for PHI Record Access
+    SecurityAuditService().record(
+      actionType: AuditActionType.phiReportViewed,
+      resourceType: AuditResourceType.phiMedicalReport,
+      resourceId: widget.report.id,
+      dataClassification: DataClassification.phi,
+      metadata: {
+        'reportTitle': widget.report.title,
+        'labName': widget.report.labProvider,
+      },
+    );
   }
 
   @override
