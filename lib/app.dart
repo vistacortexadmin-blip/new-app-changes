@@ -9,6 +9,7 @@ import 'features/reminders/views/reminders_screen.dart';
 import 'features/recovery_care/views/recovery_care_screen.dart';
 import 'features/test_booking/views/test_booking_screen.dart';
 import 'features/family_connect/views/family_connect_screen.dart';
+import 'features/security/views/security_audit_screen.dart';
 
 class VistaCortexApp extends StatelessWidget {
   const VistaCortexApp({super.key});
@@ -131,6 +132,26 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const FamilyConnectScreen()),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDF4),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(Icons.verified_user_rounded, color: Color(0xFF16A34A)),
+                ),
+                title: const Text('Security Audit Ledger', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                subtitle: const Text('HIPAA §164.312(b) & cryptographic hash chain', style: TextStyle(fontSize: 12)),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SecurityAuditScreen()),
                   );
                 },
               ),
