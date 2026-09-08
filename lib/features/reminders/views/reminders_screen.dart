@@ -38,7 +38,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           children: [
             // Header with title, subtitle & circular '+' button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,8 +81,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       ],
                     ),
                     child: IconButton(
-                      icon:
-                          const Icon(Icons.add, color: Colors.white, size: 24),
+                      icon: const Icon(Icons.add, color: Colors.white, size: 24),
                       onPressed: () => _showAddActionSheet(context),
                     ),
                   ),
@@ -209,7 +209,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             children: [
               _buildTimeFilterChip('Morning', DoseTimeOfDay.morning, state),
               const SizedBox(width: 8),
-              _buildTimeFilterChip('Afternoon', DoseTimeOfDay.afternoon, state),
+              _buildTimeFilterChip(
+                  'Afternoon', DoseTimeOfDay.afternoon, state),
               const SizedBox(width: 8),
               _buildTimeFilterChip('Evening', DoseTimeOfDay.evening, state),
               const SizedBox(width: 8),
@@ -365,7 +366,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _handleSkip(med.id, schedule.timeOfDay),
+                    onPressed: () =>
+                        _handleSkip(med.id, schedule.timeOfDay),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.warning,
                       side: const BorderSide(color: AppColors.warning),
@@ -425,8 +427,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
               const SizedBox(height: 4),
               Text(
                 'Reason: ${schedule.skipReason}',
-                style:
-                    const TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                style: const TextStyle(
+                    fontSize: 12, fontStyle: FontStyle.italic),
               ),
             ],
           ],
@@ -562,19 +564,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Schedule Test',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(
-                        labelText: 'Test Name (e.g. Blood Test)'),
+                    decoration:
+                        const InputDecoration(labelText: 'Test Name (e.g. Blood Test)'),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: labController,
-                    decoration:
-                        const InputDecoration(labelText: 'Clinic / Lab Name'),
+                    decoration: const InputDecoration(
+                        labelText: 'Clinic / Lab Name'),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -585,8 +587,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      const Text('When?  ',
-                          style: TextStyle(fontWeight: FontWeight.bold)),
+                      const Text('When?  ', style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: OutlinedButton.icon(
@@ -595,8 +596,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                               context: context,
                               initialDate: selectedDate,
                               firstDate: DateTime.now(),
-                              lastDate:
-                                  DateTime.now().add(const Duration(days: 365)),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
                             );
                             if (picked != null) {
                               setModalState(() {
@@ -624,9 +624,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                         final test = NextTestReminder(
                           id: const Uuid().v4(),
                           testName: nameController.text,
-                          labOrClinicName: labController.text.isEmpty
-                              ? 'TBD Clinic'
-                              : labController.text,
+                          labOrClinicName: labController.text.isEmpty ? 'TBD Clinic' : labController.text,
                           scheduledDate: selectedDate,
                           preparationInstructions: prepController.text,
                           isCompleted: false,
@@ -761,12 +759,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                               timeController.text.isEmpty) {
                             return;
                           }
-
-                          int totalPills =
-                              int.tryParse(totalPillsController.text) ?? 30;
-                          int dailyDose =
-                              int.tryParse(pillsPerDayController.text) ?? 1;
-
+  
+                          int totalPills = int.tryParse(totalPillsController.text) ?? 30;
+                          int dailyDose = int.tryParse(pillsPerDayController.text) ?? 1;
+  
                           final reminder = MedicineReminder(
                             id: const Uuid().v4(),
                             medicineName: nameController.text,
@@ -785,22 +781,22 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                             durationDays: 30,
                           );
 
-                          ref
-                              .read(remindersProvider.notifier)
-                              .addMedicineReminder(reminder);
+                        ref
+                            .read(remindersProvider.notifier)
+                            .addMedicineReminder(reminder);
 
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Reminder schedule saved!')),
-                          );
-                        },
-                        child: const Text('Save Reminder'),
-                      ),
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Reminder schedule saved!')),
+                        );
+                      },
+                      child: const Text('Save Reminder'),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
             );
           },
         );
@@ -856,8 +852,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: isLow
                           ? AppColors.warningSurface
@@ -869,7 +865,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        color: isLow ? AppColors.warning : AppColors.primary,
+                        color:
+                            isLow ? AppColors.warning : AppColors.primary,
                       ),
                     ),
                   ),
@@ -892,7 +889,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                             addedQuantity: 30,
                           );
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Ordered 30 day refill!')),
+                        const SnackBar(
+                            content: Text('Ordered 30 day refill!')),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -922,8 +920,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     final tests = state.nextTests;
 
     if (tests.isEmpty) {
-      return const Center(
-          child: Text('No upcoming diagnostic tests scheduled.'));
+      return const Center(child: Text('No upcoming diagnostic tests scheduled.'));
     }
 
     return ListView.builder(
@@ -964,8 +961,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: isCompleted
                           ? AppColors.successSurface
@@ -977,7 +974,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     child: Text(
                       isCompleted
                           ? 'Completed'
-                          : (test.isOverdue ? 'Overdue' : 'In $daysUntil Days'),
+                          : (test.isOverdue
+                              ? 'Overdue'
+                              : 'In $daysUntil Days'),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -1044,8 +1043,23 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           .markNextTestCompleted(test.id);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content:
-                                Text('${test.testName} marked as completed!')),
+                          content: Row(
+                            children: [
+                              const Icon(Icons.celebration, color: Colors.white),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Great job! ${test.testName} completed.\nYour doctor has been notified!',
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          backgroundColor: AppColors.success,
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          duration: const Duration(seconds: 4),
+                        ),
                       );
                     },
                     style: ElevatedButton.styleFrom(
@@ -1066,3 +1080,4 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     );
   }
 }
+
