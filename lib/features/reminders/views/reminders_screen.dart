@@ -110,7 +110,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 children: [
                   _buildDailyDosesTab(context),
                   _buildRefillSupplyTab(context),
-                  const Center(child: Text("Tests Tab (Coming Soon)")),
+                  _buildUpcomingTestsTab(context),
                 ],
               ),
             ),
@@ -703,4 +703,159 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       },
     );
   }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Tab 3: Upcoming Diagnostic Tests
+  // ──────────────────────────────────────────────────────────────────────────
+
+  Widget _buildUpcomingTestsTab(BuildContext context) {
+    final state = ref.watch(remindersProvider);
+    final tests = state.nextTests;
+
+    if (tests.isEmpty) {
+      return const Center(child: Text('No upcoming diagnostic tests scheduled.'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      itemCount: tests.length,
+      itemBuilder: (context, index) {
+        final test = tests[index];
+        final daysUntil = test.daysUntilTest;
+        final isCompleted = test.isCompleted;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isCompleted
+                  ? AppColors.border
+                  : (test.isOverdue ? AppColors.error : AppColors.primary),
+              width: isCompleted ? 1 : 1.5,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      test.testName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isCompleted
+                          ? AppColors.successSurface
+                          : (test.isOverdue
+                              ? AppColors.errorSurface
+                              : AppColors.primarySurface),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isCompleted
+                          ? 'Completed'
+                          : (test.isOverdue
+                              ? 'Overdue'
+                              : 'In $daysUntil Days'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isCompleted
+                            ? AppColors.success
+                            : (test.isOverdue
+                                ? AppColors.error
+                                : AppColors.primary),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.location_on_outlined,
+                      size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      test.labOrClinicName,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.info_outline,
+                        size: 16, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        test.preparationInstructions,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (!isCompleted) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ref
+                          .read(remindersProvider.notifier)
+                          .markNextTestCompleted(test.id);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content:
+                                Text('${test.testName} marked as completed!')),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: const Text('Mark Completed'),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
+
