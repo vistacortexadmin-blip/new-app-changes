@@ -132,7 +132,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       children: [
         const SizedBox(height: 16),
 
-        // Adherence Ring
+        // Adherence Ring & 7-Day Streak
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -141,59 +141,112 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.border),
           ),
-          child: Row(
+          child: Column(
             children: [
-              SizedBox(
-                width: 60,
-                height: 60,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    CircularProgressIndicator(
-                      value: adherence,
-                      strokeWidth: 6,
-                      backgroundColor: AppColors.border,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        adherence >= 0.8
-                            ? AppColors.success
-                            : AppColors.warning,
-                      ),
+              Row(
+                children: [
+                  SizedBox(
+                    width: 60,
+                    height: 60,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        CircularProgressIndicator(
+                          value: adherence,
+                          strokeWidth: 6,
+                          backgroundColor: AppColors.border,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            adherence >= 0.8
+                                ? AppColors.success
+                                : AppColors.warning,
+                          ),
+                        ),
+                        Center(
+                          child: Text(
+                            '${(adherence * 100).toInt()}%',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    Center(
-                      child: Text(
-                        '${(adherence * 100).toInt()}%',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Daily Adherence',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Keep up the great work! Consistency is key.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(color: AppColors.border, height: 1),
+              ),
+              // 7-Day Streak
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: List.generate(7, (index) {
+                  final isToday = index == 6;
+                  final days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+                  
+                  // Mocked streak history (True = Green, False = Red)
+                  // Let's pretend they did well all week except Thursday
+                  final bool streakStatus = isToday 
+                      ? (adherence >= 0.8) 
+                      : (index != 3); 
+
+                  return Column(
+                    children: [
+                      Text(
+                        days[index],
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                          color: isToday ? AppColors.textPrimary : AppColors.textSecondary,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Daily Adherence',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: streakStatus ? AppColors.successSurface : AppColors.errorSurface,
+                          border: Border.all(
+                            color: streakStatus ? AppColors.success : AppColors.error,
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Icon(
+                          streakStatus ? Icons.check : Icons.close,
+                          size: 14,
+                          color: streakStatus ? AppColors.success : AppColors.error,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 4),
-                    Text(
-                      'Keep up the great work! Consistency is key.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  );
+                }),
               ),
             ],
           ),
@@ -271,10 +324,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   List<Widget> _buildMedicineCards(RemindersState state) {
     List<Widget> cards = [];
     final selectedTime = state.selectedTimeFilter;
+    
+    int pendingCount = 0;
 
     for (var med in state.medicines) {
       for (var schedule in med.dailySchedules) {
         if (schedule.timeOfDay == selectedTime) {
+          if (schedule.status == AdherenceStatus.pending) {
+            pendingCount++;
+          }
           cards.add(_buildMedicineCard(med, schedule));
           cards.add(const SizedBox(height: 12));
         }
@@ -288,6 +346,37 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           child: Text('No medicines scheduled for this time.'),
         ),
       ));
+    } else if (pendingCount > 1) {
+      // Add the 'Take All' button at the top
+      cards.insert(
+        0,
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                ref
+                    .read(remindersProvider.notifier)
+                    .markAllDosesTaken(selectedTime!);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Marked all $pendingCount doses as taken!')),
+                );
+              },
+              icon: const Icon(Icons.check_circle_outline),
+              label: Text('Take All ${selectedTime.toString().split('.').last} Doses ($pendingCount)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     return cards;
@@ -301,6 +390,17 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     bool isTaken = schedule.status == AdherenceStatus.taken;
     bool isSkipped = schedule.status == AdherenceStatus.skipped;
 
+    IconData getIconForDosage(String dosage) {
+      final lower = dosage.toLowerCase();
+      if (lower.contains('syrup') || lower.contains('liquid') || lower.contains('ml')) {
+        return Icons.water_drop;
+      }
+      if (lower.contains('injection') || lower.contains('insulin')) {
+        return Icons.vaccines;
+      }
+      return Icons.medication_rounded;
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -312,6 +412,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 44,
@@ -320,7 +421,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   color: AppColors.primarySurface,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.medication_rounded,
+                child: Icon(getIconForDosage(med.dosage),
                     color: AppColors.primary, size: 22),
               ),
               const SizedBox(width: 14),
@@ -337,22 +438,46 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      med.dosage,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          med.dosage,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('•', style: TextStyle(color: AppColors.border)),
+                        const SizedBox(width: 8),
+                        Text(
+                          schedule.timeString,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      schedule.timeString,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
+                    if (med.warning != null) ...[
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.errorSurface.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          med.warning!,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.error,
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),

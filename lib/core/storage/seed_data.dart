@@ -170,6 +170,7 @@ class SeedData {
           dosage: '1 Tablet',
           instructions: 'Take at bedtime with water',
           prescribedFor: 'Lipid Management & Cardioprotection',
+          warning: '⚠️ Avoid Grapefruit or Pomelo juice',
           totalQuantityAvailable: 18,
           dailyDoseCount: 1,
           startDate: DateTime.now().subtract(const Duration(days: 12)),
@@ -188,6 +189,7 @@ class SeedData {
           dosage: '1 Tablet',
           instructions: 'Take with or immediately after meals',
           prescribedFor: 'Glycemic Regulation',
+          warning: '⚠️ Do not crush. Take with full meal.',
           totalQuantityAvailable: 6, // Low supply trigger!
           dailyDoseCount: 2,
           startDate: DateTime.now().subtract(const Duration(days: 24)),
@@ -212,6 +214,7 @@ class SeedData {
           dosage: '1 Capsule',
           instructions: 'Take with morning breakfast',
           prescribedFor: 'Cardiovascular Vitality & Joint Health',
+          warning: null,
           totalQuantityAvailable: 45,
           dailyDoseCount: 1,
           startDate: DateTime.now().subtract(const Duration(days: 5)),

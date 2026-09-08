@@ -95,6 +95,37 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     state = state.copyWith(medicines: updatedMedicines);
   }
 
+  void markAllDosesTaken(DoseTimeOfDay timeOfDay) {
+    final now = DateTime.now();
+    final updatedMeds = state.medicines.map((med) {
+      bool changed = false;
+      int pillsTaken = 0;
+      final newSchedules = med.dailySchedules.map((schedule) {
+        if (schedule.timeOfDay == timeOfDay &&
+            schedule.status == AdherenceStatus.pending) {
+          changed = true;
+          pillsTaken++;
+          return schedule.copyWith(
+            status: AdherenceStatus.taken,
+            loggedAt: now,
+          );
+        }
+        return schedule;
+      }).toList();
+
+      if (changed) {
+        return med.copyWith(
+          dailySchedules: newSchedules,
+          totalQuantityAvailable:
+              (med.totalQuantityAvailable - pillsTaken).clamp(0, 9999),
+        );
+      }
+      return med;
+    }).toList();
+
+    state = state.copyWith(medicines: updatedMeds);
+  }
+
   void markDoseSkipped({
     required String medicineId,
     required DoseTimeOfDay timeOfDay,

@@ -52,6 +52,7 @@ class MedicineReminder {
   final int dailyDoseCount;
   final DateTime startDate;
   final int durationDays;
+  final String? warning;
 
   MedicineReminder({
     required this.id,
@@ -64,6 +65,7 @@ class MedicineReminder {
     required this.dailyDoseCount,
     required this.startDate,
     required this.durationDays,
+    this.warning,
   });
 
   int get daysOfSupplyRemaining {
@@ -79,20 +81,30 @@ class MedicineReminder {
   bool get isCriticalSupply => daysOfSupplyRemaining <= 2;
 
   MedicineReminder copyWith({
+    String? id,
+    String? medicineName,
+    String? dosage,
+    String? instructions,
+    String? prescribedFor,
     List<DoseSchedule>? dailySchedules,
     int? totalQuantityAvailable,
+    int? dailyDoseCount,
+    DateTime? startDate,
+    int? durationDays,
+    String? warning,
   }) {
     return MedicineReminder(
-      id: id,
-      medicineName: medicineName,
-      dosage: dosage,
-      instructions: instructions,
-      prescribedFor: prescribedFor,
+      id: id ?? this.id,
+      medicineName: medicineName ?? this.medicineName,
+      dosage: dosage ?? this.dosage,
+      instructions: instructions ?? this.instructions,
+      prescribedFor: prescribedFor ?? this.prescribedFor,
       dailySchedules: dailySchedules ?? this.dailySchedules,
       totalQuantityAvailable: totalQuantityAvailable ?? this.totalQuantityAvailable,
-      dailyDoseCount: dailyDoseCount,
-      startDate: startDate,
-      durationDays: durationDays,
+      dailyDoseCount: dailyDoseCount ?? this.dailyDoseCount,
+      startDate: startDate ?? this.startDate,
+      durationDays: durationDays ?? this.durationDays,
+      warning: warning ?? this.warning,
     );
   }
 }
