@@ -110,6 +110,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 children: [
                   _buildDailyDosesTab(context),
                   _buildRefillSupplyTab(context),
+                  const Center(child: Text("Tests Tab (Coming Soon)")),
                   _buildUpcomingTestsTab(context),
                 ],
               ),
