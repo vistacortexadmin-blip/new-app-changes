@@ -16,8 +16,7 @@ void main() async {
   final notificationService = NotificationService();
   await notificationService.initialize();
   await notificationService.requestPermissions();
-  // Show an instant notification to confirm the system is working
-  await notificationService.showTestNotification();
+
   runApp(
     const ProviderScope(
       child: VistaCortexApp(),
