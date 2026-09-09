@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/reminder_model.dart';
 import '../../../core/storage/seed_data.dart';
+import '../../../core/services/notification_service.dart';
 
 class RemindersState {
   final List<MedicineReminder> medicines;
@@ -124,6 +125,17 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     }).toList();
 
     state = state.copyWith(medicines: updatedMeds);
+
+    // Check for low stock warnings after taking doses
+    for (final med in state.lowSupplyMedicines) {
+      if (med.daysOfSupplyRemaining == 6) { // Exactly 6 days left (just dropped below 7)
+        NotificationService().showRefillWarning(
+          id: med.id.hashCode,
+          medicineName: med.medicineName,
+          daysLeft: med.daysOfSupplyRemaining,
+        );
+      }
+    }
   }
 
   void markDoseSkipped({
@@ -172,11 +184,30 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     state = state.copyWith(
       medicines: [...state.medicines, reminder],
     );
+
+    // Schedule notification for each daily schedule
+    for (int i = 0; i < reminder.dailySchedules.length; i++) {
+      final schedule = reminder.dailySchedules[i];
+      NotificationService().scheduleDailyMedicineReminder(
+        id: reminder.id.hashCode + i, // Unique int ID for local notifications
+        medicineName: reminder.medicineName,
+        dosage: reminder.dosage,
+        timeOfDay: schedule.timeOfDay,
+        timeString: schedule.timeString,
+      );
+    }
   }
 
 
   void addNextTestReminder(NextTestReminder reminder) {
     state = state.copyWith(nextTests: [reminder, ...state.nextTests]);
+    
+    NotificationService().scheduleTestReminder(
+      id: reminder.id.hashCode,
+      testName: reminder.testName,
+      labName: reminder.labOrClinicName,
+      date: reminder.scheduledDate,
+    );
   }
 
   void markNextTestCompleted(String id) {
