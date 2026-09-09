@@ -1,6 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../core/services/auth_service.dart';
 import '../../../app.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -17,7 +21,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
   final _analytics = AnalyticsService();
+  final _picker = ImagePicker();
 
+  XFile? _profileImage;
   String _selectedGender = 'Male';
   String _selectedBloodGroup = 'Select';
   bool _syncFamily = false;
@@ -41,22 +47,151 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
-  void _continue() {
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: source,
+        maxWidth: 600,
+        maxHeight: 600,
+        imageQuality: 85,
+      );
+      if (pickedFile != null) {
+        setState(() {
+          _profileImage = pickedFile;
+        });
+      }
+    } catch (e) {
+      debugPrint('[ProfileSetup] Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Could not load image: $e'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showImagePickerModal() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Choose Profile Picture',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEFF6FF),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
+                  ),
+                  title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  subtitle: const Text('Use camera to take a clear profile picture', style: TextStyle(fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.photo_library_rounded, color: Color(0xFF16A34A)),
+                  ),
+                  title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                  subtitle: const Text('Select a picture from your device', style: TextStyle(fontSize: 12)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+                if (_profileImage != null) ...[
+                  const Divider(),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.delete_outline_rounded, color: AppColors.error),
+                    ),
+                    title: const Text('Remove Picture', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700, fontSize: 14)),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() {
+                        _profileImage = null;
+                      });
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _continue() async {
     if (_formKey.currentState?.validate() ?? false) {
       _analytics.logEvent('profile_completed', {
         'has_name': _nameController.text.isNotEmpty,
         'gender': _selectedGender,
         'has_family_sync': _syncFamily,
+        'has_image': _profileImage != null,
       });
 
-      // Navigate to Dashboard, clearing entire navigation stack
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const MainNavigationShell(),
-        ),
-        (route) => false,
-      );
+      // Save user profile to persistent local storage bound to authenticated UID
+      final prefs = await SharedPreferences.getInstance();
+      final currentUid = AuthService().currentUser?.uid ?? 'local_user';
+      await prefs.setBool('profile_completed', true);
+      await prefs.setString('profile_owner_uid', currentUid);
+      await prefs.setString('user_name', _nameController.text.trim());
+      await prefs.setString('user_age', _ageController.text.trim());
+      await prefs.setString('user_gender', _selectedGender);
+      await prefs.setString('user_weight', _weightController.text.trim());
+      await prefs.setString('user_height', _heightController.text.trim());
+      await prefs.setString('user_blood_group', _selectedBloodGroup);
+      if (_profileImage != null) {
+        await prefs.setString('user_image_path', _profileImage!.path);
+      }
+      await prefs.remove('user_avatar_emoji');
+
+      if (mounted) {
+        // Navigate to Dashboard, clearing entire navigation stack
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const MainNavigationShell(),
+          ),
+          (route) => false,
+        );
+      }
     }
   }
 
@@ -99,17 +234,88 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   children: [
                     // Header
                     Center(
-                      child: Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: AppColors.primarySurface,
-                          borderRadius: BorderRadius.circular(24),
+                      child: GestureDetector(
+                        onTap: _showImagePickerModal,
+                        child: Stack(
+                          children: [
+                            Container(
+                              width: 96,
+                              height: 96,
+                              decoration: BoxDecoration(
+                                color: AppColors.primarySurface,
+                                borderRadius: BorderRadius.circular(28),
+                                border: Border.all(
+                                  color: AppColors.primary.withValues(alpha: 0.3),
+                                  width: 2,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primary.withValues(alpha: 0.12),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(26),
+                                child: _profileImage != null
+                                    ? Image.file(
+                                        File(_profileImage!.path),
+                                        width: 96,
+                                        height: 96,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : const Center(
+                                        child: Icon(
+                                          Icons.person_rounded,
+                                          color: AppColors.primary,
+                                          size: 46,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            Positioned(
+                              right: -2,
+                              bottom: -2,
+                              child: Container(
+                                padding: const EdgeInsets.all(7),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt_rounded,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        child: const Icon(
-                          Icons.person_outline_rounded,
-                          color: AppColors.primary,
-                          size: 40,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Center(
+                      child: TextButton.icon(
+                        onPressed: _showImagePickerModal,
+                        icon: const Icon(Icons.add_a_photo_outlined, size: 16, color: AppColors.primary),
+                        label: Text(
+                          _profileImage != null
+                              ? 'Change Photo'
+                              : 'Add Profile Photo',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ),
@@ -204,7 +410,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                   border: Border.all(color: AppColors.border),
                                 ),
                                 child: DropdownButtonFormField<String>(
-                                  value: _selectedGender,
+                                  initialValue: _selectedGender,
                                   items: _genders.map((g) {
                                     return DropdownMenuItem(value: g, child: Text(g, style: const TextStyle(fontSize: 14)));
                                   }).toList(),
@@ -300,7 +506,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         border: Border.all(color: AppColors.border),
                       ),
                       child: DropdownButtonFormField<String>(
-                        value: _selectedBloodGroup,
+                        initialValue: _selectedBloodGroup,
                         items: _bloodGroups.map((bg) {
                           return DropdownMenuItem(
                             value: bg,
@@ -314,9 +520,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           );
                         }).toList(),
                         onChanged: (val) => setState(() => _selectedBloodGroup = val ?? 'Select'),
-                        decoration: InputDecoration(
-                          prefixIcon: const Icon(Icons.bloodtype_outlined, color: AppColors.error, size: 20),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.bloodtype_outlined, color: AppColors.error, size: 20),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                           border: InputBorder.none,
                         ),
                         dropdownColor: Colors.white,
@@ -392,8 +598,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                                 child: Switch(
                                   value: _syncFamily,
                                   onChanged: (val) => setState(() => _syncFamily = val),
-                                  activeColor: AppColors.primary,
-                                  activeTrackColor: AppColors.primarySurface,
+                                  activeThumbColor: Colors.white,
+                                  activeTrackColor: AppColors.primary,
                                   inactiveThumbColor: const Color(0xFFCBD5E1),
                                   inactiveTrackColor: const Color(0xFFE2E8F0),
                                 ),
@@ -435,17 +641,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               bgColor: AppColors.errorSurface,
                               name: 'Spouse / Partner',
                               status: _isSyncing ? 'Syncing...' : 'Tap to invite',
-                              onTap: () {
+                              onTap: () async {
+                                final messenger = ScaffoldMessenger.of(context);
                                 setState(() => _isSyncing = true);
-                                Future.delayed(const Duration(seconds: 2), () {
-                                  if (mounted) setState(() => _isSyncing = false);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Invitation link copied! Share with your partner.'),
-                                      backgroundColor: AppColors.success,
-                                    ),
-                                  );
-                                });
+                                await Future.delayed(const Duration(seconds: 2));
+                                if (!mounted) return;
+                                setState(() => _isSyncing = false);
+                                messenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Invitation link copied! Share with your partner.'),
+                                    backgroundColor: AppColors.success,
+                                  ),
+                                );
                               },
                             ),
                             const SizedBox(height: 10),
@@ -456,6 +663,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                               name: 'Parent / Guardian',
                               status: 'Tap to invite',
                               onTap: () {
+                                if (!mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('Invitation link copied! Share with your parent.'),

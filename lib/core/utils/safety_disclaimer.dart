@@ -14,22 +14,28 @@ class SafetyDisclaimerBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (compact) {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: AppColors.infoSurface,
+          color: isDark ? const Color(0xFF1E3A5F) : AppColors.infoSurface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.info.withOpacity(0.2)),
+          border: Border.all(color: AppColors.info.withValues(alpha: 0.25)),
         ),
         child: Row(
           children: [
             const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.info),
             const SizedBox(width: 8),
-            const Expanded(
+            Expanded(
               child: Text(
                 'AI summaries are for educational reference. Consult your doctor for medical decisions.',
-                style: TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.2),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
+                  height: 1.2,
+                ),
               ),
             ),
             if (onLearnMore != null)
@@ -48,23 +54,23 @@ class SafetyDisclaimerBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: isDark ? const Color(0xFF334155) : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.health_and_safety_outlined, color: AppColors.primary, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.health_and_safety_outlined, color: AppColors.primary, size: 20),
+              const SizedBox(width: 8),
               Text(
                 'Clinical Safety & Patient Guidance',
                 style: TextStyle(
                   fontWeight: FontWeight.w700,
                   fontSize: 13,
-                  color: AppColors.textPrimary,
+                  color: isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary,
                 ),
               ),
             ],
@@ -72,7 +78,11 @@ class SafetyDisclaimerBanner extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             AppConstants.medicalDisclaimerFull,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
+              height: 1.4,
+            ),
           ),
         ],
       ),

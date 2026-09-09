@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../app.dart';
 import 'privacy_policy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,6 +41,35 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _navigatePostAuth({bool forceOnboarding = false}) async {
+    final currentUid = _authService.currentUser?.uid;
+    if (currentUid == null) {
+      debugPrint('[Security] No active authenticated session found.');
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final bool profileCompleted = prefs.getBool('profile_completed') ?? false;
+    final String? profileOwner = prefs.getString('profile_owner_uid');
+    if (!mounted) return;
+
+    // Verify that the profile data genuinely belongs to THIS user session
+    final bool isOwnerValid = profileOwner == null || profileOwner == currentUid;
+
+    if (!forceOnboarding && profileCompleted && isOwnerValid) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigationShell()),
+        (route) => false,
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+      );
+    }
+  }
+
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
@@ -53,17 +85,22 @@ class _LoginScreenState extends State<LoginScreen> {
             _passwordController.text,
           );
         }
+        if (mounted) {
+          await _navigatePostAuth(forceOnboarding: _isSignUp);
+        }
       } catch (e) {
-        debugPrint('[Auth] Proceeding with offline/demo credentials: $e');
+        debugPrint('[Auth] Sign In / Sign Up error: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Authentication failed: ${e.toString().replaceAll("Exception: ", "")}'),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const PrivacyPolicyScreen(),
-            ),
-          );
         }
       }
     }
@@ -80,20 +117,34 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: AppColors.success,
           ),
         );
+        await _navigatePostAuth();
+      } else {
+        debugPrint('[Auth] Google sign in was cancelled by user');
       }
     } catch (e) {
-      debugPrint('[Auth] Google Sign In fallback notice: $e');
-    } finally {
+      debugPrint('[Auth] Google Sign In error: $e');
       if (mounted) {
-        setState(() => _isLoading = false);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const PrivacyPolicyScreen(),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Google Sign-In failed: ${e.toString().replaceAll("Exception: ", "")}'),
+            backgroundColor: AppColors.error,
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
+  }
+
+  void _handleAppleSignIn() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Sign in with Apple requires active Apple Developer credentials.'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
   }
 
   @override
@@ -357,10 +408,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 28),
 
                         // Divider
-                        Row(
+                        const Row(
                           children: [
-                            Expanded(child: Divider(color: const Color(0xFF334155), thickness: 0.8)),
-                            const Padding(
+                            Expanded(child: Divider(color: Color(0xFF334155), thickness: 0.8)),
+                            Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
                                 'or continue with',
@@ -370,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: const Color(0xFF334155), thickness: 0.8)),
+                            Expanded(child: Divider(color: Color(0xFF334155), thickness: 0.8)),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -379,23 +430,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildSocialButton(
-                                icon: Icons.g_mobiledata_rounded,
+                              child: _buildSocialButtonSvg(
+                                svgAsset: 'assets/icons/google_logo.svg',
                                 label: 'Google',
                                 onTap: _handleGoogleSignIn,
                               ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
-                              child: _buildSocialButton(
-                                icon: Icons.apple_rounded,
+                              child: _buildSocialButtonSvg(
+                                svgAsset: 'assets/icons/apple_logo.svg',
                                 label: 'Apple',
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
-                                  );
-                                },
+                                svgColor: Colors.white,
+                                onTap: _handleAppleSignIn,
                               ),
                             ),
                           ],
@@ -502,10 +549,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton({
-    required IconData icon,
+  Widget _buildSocialButtonSvg({
+    required String svgAsset,
     required String label,
     required VoidCallback onTap,
+    Color? svgColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -520,8 +568,15 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 24),
-            const SizedBox(width: 8),
+            SvgPicture.asset(
+              svgAsset,
+              width: 22,
+              height: 22,
+              colorFilter: svgColor != null
+                  ? ColorFilter.mode(svgColor, BlendMode.srcIn)
+                  : null,
+            ),
+            const SizedBox(width: 10),
             Text(
               label,
               style: const TextStyle(
@@ -536,3 +591,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+

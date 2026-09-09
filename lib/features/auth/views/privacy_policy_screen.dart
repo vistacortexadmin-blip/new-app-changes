@@ -128,7 +128,7 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
                     'We may update this privacy policy from time to time. You will be notified of any significant changes through in-app notifications and email. Continued use of the app after policy updates constitutes acceptance.',
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  const Text(
                     'Last updated: September 2026',
                     style: TextStyle(
                       fontSize: 12,

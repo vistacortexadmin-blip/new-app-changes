@@ -140,7 +140,7 @@ class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
                     'These Terms shall be governed by and construed in accordance with the laws of India. Any disputes arising under these Terms shall be subject to the exclusive jurisdiction of the courts located in India.',
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  const Text(
                     'Effective Date: September 2026',
                     style: TextStyle(
                       fontSize: 12,

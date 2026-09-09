@@ -17,12 +17,12 @@ class _AiChatScreenState extends State<AiChatScreen> {
   final List<Map<String, dynamic>> _messages = [
     {
       'isUser': false,
-      'text': 'Hello Sritan! 👋 I am your VistaCortex AI health assistant. I can help explain your lab test reports, track your medications, or answer recovery questions.',
+      'text': 'Hello! 👋 I am your VistaCortex AI health assistant. I can help explain your lab test reports, track your medications, or answer recovery questions.',
       'time': 'Just now',
     },
     {
       'isUser': false,
-      'text': 'Your recent CBC blood test from Apollo Hospitals looks great! All parameters are within the healthy normal range.',
+      'text': 'Your recent CBC blood test looks great! All parameters are within the healthy normal range.',
       'time': 'Just now',
     },
   ];
@@ -56,23 +56,21 @@ class _AiChatScreenState extends State<AiChatScreen> {
     // Simulate smart AI response
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted) return;
-      String reply = 'Based on your health records, maintaining a balanced diet, staying hydrated, and adhering to your prescribed Vitamin D3 and Metformin will keep your parameters optimal.';
+      String reply = 'Based on your health records, maintaining a balanced diet, staying hydrated, and adhering to your prescribed medications will keep your parameters optimal.';
       if (text.toLowerCase().contains('cbc') || text.toLowerCase().contains('report') || text.toLowerCase().contains('blood')) {
-        reply = 'Your CBC report from 12 Aug 2025 at Apollo Hospitals shows:\n• Hemoglobin: 13.8 g/dL (Optimal)\n• WBC: 6,200 /μL (Healthy)\n• Platelets: 2.5 lakh/μL (Normal)\nEverything is within safe clinical boundaries!';
-      } else if (text.toLowerCase().contains('diet') || text.toLowerCase().contains('food')) {
-        reply = 'Recommended for you today:\n• Breakfast: Oats with nuts & green tea\n• Lunch: Brown rice, grilled chicken & fresh salad\n• Tip: Include iron-rich foods like spinach and legumes.';
+        reply = 'Your Complete Blood Count (CBC) was performed recently. Key parameters like Hemoglobin (14.2 g/dL), WBC (6,800 /uL), and Platelets (245,000 /uL) are all in normal healthy ranges.';
       } else if (text.toLowerCase().contains('dose') || text.toLowerCase().contains('med')) {
-        reply = 'Your next scheduled dose is:\n• Vitamin D3 (1 Tablet) at 1:00 PM after lunch\n• Metformin (1 Tablet) scheduled for 8:00 AM tomorrow.';
+        reply = 'Your next scheduled medication is Metformin (500mg) with dinner at 8:00 PM. Vitamin D3 is scheduled for Sunday morning.';
+      } else if (text.toLowerCase().contains('surgery') || text.toLowerCase().contains('recovery')) {
+        reply = 'Your surgery recovery protocol recommends gentle 10-minute walks, maintaining hydration, and doing breathing exercises 3 times daily.';
       }
-
       setState(() {
         _messages.add({
           'isUser': false,
           'text': reply,
-          'time': 'Now',
+          'time': 'Just now',
         });
       });
-
       _scrollToBottom();
     });
 
@@ -93,9 +91,18 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+    final borderColor = isDark ? const Color(0xFF334155) : AppColors.border;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        backgroundColor: cardBg,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
         title: Row(
           children: [
             Container(
@@ -109,7 +116,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               child: const Icon(Icons.auto_awesome, color: Colors.white, size: 18),
             ),
             const SizedBox(width: 10),
-            const Column(
+            Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -117,14 +124,14 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: textColor,
                   ),
                 ),
                 Text(
                   'Always here to help',
                   style: TextStyle(
                     fontSize: 11,
-                    color: AppColors.textSecondary,
+                    color: textSecondary,
                   ),
                 ),
               ],
@@ -153,17 +160,17 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
-                      color: isUser ? AppColors.primary : Colors.white,
+                      color: isUser ? AppColors.primary : cardBg,
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(18),
                         topRight: const Radius.circular(18),
                         bottomLeft: Radius.circular(isUser ? 18 : 4),
                         bottomRight: Radius.circular(isUser ? 4 : 18),
                       ),
-                      border: isUser ? null : Border.all(color: AppColors.border),
+                      border: isUser ? null : Border.all(color: borderColor),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.03),
+                          color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -175,7 +182,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                         Text(
                           msg['text'] as String,
                           style: TextStyle(
-                            color: isUser ? Colors.white : AppColors.textPrimary,
+                            color: isUser ? Colors.white : textColor,
                             fontSize: 14,
                             height: 1.4,
                           ),
@@ -201,8 +208,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ActionChip(
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: AppColors.border),
+                    backgroundColor: cardBg,
+                    side: BorderSide(color: borderColor),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -229,29 +236,30 @@ class _AiChatScreenState extends State<AiChatScreen> {
               top: 8,
               bottom: MediaQuery.of(context).padding.bottom + 8,
             ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: AppColors.border)),
+            decoration: BoxDecoration(
+              color: cardBg,
+              border: Border(top: BorderSide(color: borderColor)),
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: AppColors.background,
+                      color: isDark ? const Color(0xFF0F172A) : AppColors.background,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: AppColors.border),
+                      border: Border.all(color: borderColor),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                     child: TextField(
                       controller: _controller,
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: textColor, fontSize: 14),
+                      decoration: InputDecoration(
                         hintText: 'Ask anything about your health...',
-                        hintStyle: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                        hintStyle: TextStyle(fontSize: 13, color: textSecondary),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 10),
                       ),
                       onSubmitted: _sendMessage,
                     ),
