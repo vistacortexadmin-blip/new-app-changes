@@ -82,7 +82,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.add, color: Colors.white, size: 24),
-                      onPressed: () => _showAddActionSheet(context),
+                      onPressed: () => _showAddMedicineModal(context),
                     ),
                   ),
                 ],
@@ -110,7 +110,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 children: [
                   _buildDailyDosesTab(context),
                   _buildRefillSupplyTab(context),
-                  _buildUpcomingTestsTab(context),
+                  const Center(child: Text("Tests Tab (Coming Soon)")),
                 ],
               ),
             ),
@@ -479,184 +479,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Action Sheet (Choose Medicine or Test)
-  // ──────────────────────────────────────────────────────────────────────────
-
-  void _showAddActionSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'What would you like to add?',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
-                ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: AppColors.primarySurface,
-                    child: Icon(Icons.medication, color: AppColors.primary),
-                  ),
-                  title: const Text('Add Medicine Reminder'),
-                  subtitle: const Text('Schedule a pill, syrup, or injection'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showAddMedicineModal(context);
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: AppColors.infoSurface,
-                    child: Icon(Icons.science, color: AppColors.info),
-                  ),
-                  title: const Text('Schedule Diagnostic Test'),
-                  subtitle: const Text('Add a lab test, scan, or checkup'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showAddTestModal(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Add Test Modal
-  // ──────────────────────────────────────────────────────────────────────────
-
-  void _showAddTestModal(BuildContext context) {
-    final nameController = TextEditingController();
-    final labController = TextEditingController();
-    final prepController = TextEditingController();
-    DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Schedule Test',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Test Name (e.g. Blood Test)'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: labController,
-                    decoration: const InputDecoration(
-                        labelText: 'Clinic / Lab Name'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: prepController,
-                    decoration: const InputDecoration(
-                        labelText: 'Preparation (e.g. 12h fasting)'),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('When?  ', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: selectedDate,
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 365)),
-                            );
-                            if (picked != null) {
-                              setModalState(() {
-                                selectedDate = picked;
-                              });
-                            }
-                          },
-                          icon: const Icon(Icons.calendar_month),
-                          label: Text(
-                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (nameController.text.isEmpty) {
-                          return;
-                        }
-
-                        final test = NextTestReminder(
-                          id: const Uuid().v4(),
-                          testName: nameController.text,
-                          labOrClinicName: labController.text.isEmpty ? 'TBD Clinic' : labController.text,
-                          scheduledDate: selectedDate,
-                          preparationInstructions: prepController.text,
-                          isCompleted: false,
-                        );
-
-                        ref
-                            .read(remindersProvider.notifier)
-                            .addNextTestReminder(test);
-
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Diagnostic test scheduled!')),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.info,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Save Test'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
   // Add Medicine Modal
   // ──────────────────────────────────────────────────────────────────────────
 
@@ -664,8 +486,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     final nameController = TextEditingController();
     final dosageController = TextEditingController();
     final timeController = TextEditingController();
-    final totalPillsController = TextEditingController(text: '30');
-    final pillsPerDayController = TextEditingController(text: '1');
     DoseTimeOfDay selectedTime = DoseTimeOfDay.morning;
 
     showModalBottomSheet(
@@ -685,101 +505,75 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 top: 24,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Add Medicine',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 16),
-                    TextField(
-                      controller: nameController,
-                      decoration:
-                          const InputDecoration(labelText: 'Medicine Name'),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: dosageController,
-                      decoration: const InputDecoration(
-                          labelText: 'Dosage (e.g., 500mg)'),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: totalPillsController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                                labelText: 'Total Pills Box'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: pillsPerDayController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                                labelText: 'Pills Per Day'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: timeController,
-                      decoration: const InputDecoration(
-                          labelText: 'Time (e.g. 08:00 AM)'),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<DoseTimeOfDay>(
-                      initialValue: selectedTime,
-                      decoration:
-                          const InputDecoration(labelText: 'Time of Day'),
-                      items: DoseTimeOfDay.values.map((time) {
-                        return DropdownMenuItem(
-                          value: time,
-                          child: Text(time.toString().split('.').last),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setModalState(() => selectedTime = val);
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Add Medicine',
+                      style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration:
+                        const InputDecoration(labelText: 'Medicine Name'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: dosageController,
+                    decoration: const InputDecoration(
+                        labelText: 'Dosage (e.g., 500mg)'),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: timeController,
+                    decoration: const InputDecoration(
+                        labelText: 'Time (e.g. 08:00 AM)'),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<DoseTimeOfDay>(
+                    initialValue: selectedTime,
+                    decoration:
+                        const InputDecoration(labelText: 'Time of Day'),
+                    items: DoseTimeOfDay.values.map((time) {
+                      return DropdownMenuItem(
+                        value: time,
+                        child: Text(time.toString().split('.').last),
+                      );
+                    }).toList(),
+                    onChanged: (val) {
+                      if (val != null) {
+                        setModalState(() => selectedTime = val);
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (nameController.text.isEmpty ||
+                            timeController.text.isEmpty) {
+                          return;
                         }
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (nameController.text.isEmpty ||
-                              timeController.text.isEmpty) {
-                            return;
-                          }
-  
-                          int totalPills = int.tryParse(totalPillsController.text) ?? 30;
-                          int dailyDose = int.tryParse(pillsPerDayController.text) ?? 1;
-  
-                          final reminder = MedicineReminder(
-                            id: const Uuid().v4(),
-                            medicineName: nameController.text,
-                            dosage: dosageController.text,
-                            instructions: '',
-                            prescribedFor: '',
-                            dailySchedules: [
-                              DoseSchedule(
-                                timeOfDay: selectedTime,
-                                timeString: timeController.text,
-                              )
-                            ],
-                            totalQuantityAvailable: totalPills,
-                            dailyDoseCount: dailyDose,
-                            startDate: DateTime.now(),
-                            durationDays: 30,
-                          );
+
+                        final reminder = MedicineReminder(
+                          id: const Uuid().v4(),
+                          medicineName: nameController.text,
+                          dosage: dosageController.text,
+                          instructions: '',
+                          prescribedFor: '',
+                          dailySchedules: [
+                            DoseSchedule(
+                              timeOfDay: selectedTime,
+                              timeString: timeController.text,
+                            )
+                          ],
+                          totalQuantityAvailable: 30,
+                          dailyDoseCount: 1,
+                          startDate: DateTime.now(),
+                          durationDays: 30,
+                        );
 
                         ref
                             .read(remindersProvider.notifier)
@@ -796,7 +590,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   ),
                 ],
               ),
-            ),
             );
           },
         );
@@ -910,174 +703,4 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       },
     );
   }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Tab 3: Upcoming Diagnostic Tests
-  // ──────────────────────────────────────────────────────────────────────────
-
-  Widget _buildUpcomingTestsTab(BuildContext context) {
-    final state = ref.watch(remindersProvider);
-    final tests = state.nextTests;
-
-    if (tests.isEmpty) {
-      return const Center(child: Text('No upcoming diagnostic tests scheduled.'));
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      itemCount: tests.length,
-      itemBuilder: (context, index) {
-        final test = tests[index];
-        final daysUntil = test.daysUntilTest;
-        final isCompleted = test.isCompleted;
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isCompleted
-                  ? AppColors.border
-                  : (test.isOverdue ? AppColors.error : AppColors.primary),
-              width: isCompleted ? 1 : 1.5,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      test.testName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isCompleted
-                          ? AppColors.successSurface
-                          : (test.isOverdue
-                              ? AppColors.errorSurface
-                              : AppColors.primarySurface),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      isCompleted
-                          ? 'Completed'
-                          : (test.isOverdue
-                              ? 'Overdue'
-                              : 'In $daysUntil Days'),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isCompleted
-                            ? AppColors.success
-                            : (test.isOverdue
-                                ? AppColors.error
-                                : AppColors.primary),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined,
-                      size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      test.labOrClinicName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline,
-                        size: 16, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        test.preparationInstructions,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!isCompleted) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      ref
-                          .read(remindersProvider.notifier)
-                          .markNextTestCompleted(test.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Row(
-                            children: [
-                              const Icon(Icons.celebration, color: Colors.white),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Great job! ${test.testName} completed.\nYour doctor has been notified!',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          backgroundColor: AppColors.success,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          duration: const Duration(seconds: 4),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Mark Completed'),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        );
-      },
-    );
-  }
 }
-
