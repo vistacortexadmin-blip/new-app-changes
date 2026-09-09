@@ -15,9 +15,21 @@ class NotificationService {
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
-    // In a real app we'd get the actual device timezone using flutter_timezone.
-    // Setting default fallback for the emulator for now.
-    tz.setLocalLocation(tz.getLocation('America/New_York'));
+    // Use the device's local timezone offset to find the correct tz location
+    final localOffset = DateTime.now().timeZoneOffset;
+    final allLocations = tz.timeZoneDatabase.locations;
+    tz.Location? matchedLocation;
+    for (final entry in allLocations.entries) {
+      final loc = entry.value;
+      if (loc.zones.isNotEmpty) {
+        final zone = loc.currentTimeZone;
+        if (zone.offset == localOffset.inMilliseconds) {
+          matchedLocation = loc;
+          break;
+        }
+      }
+    }
+    tz.setLocalLocation(matchedLocation ?? tz.getLocation('Asia/Kolkata'));
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
