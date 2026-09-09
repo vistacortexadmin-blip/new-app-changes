@@ -103,15 +103,32 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
-      'Time for your medicine',
+      'Time for your medicine 💊',
       'Take $medicineName ($dosage) now.',
       scheduledDate,
       platformChannelSpecifics,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
       payload: 'medicine_$id',
+    );
+  }
+
+  // Fires an instant notification immediately — use this to verify the system works
+  Future<void> showTestNotification() async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'test_now_channel',
+      'Instant Test',
+      channelDescription: 'Immediate test notification',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    await flutterLocalNotificationsPlugin.show(
+      9999,
+      '🔔 Notifications are working!',
+      'VistaCortex will now remind you to take your medicines on time.',
+      const NotificationDetails(android: androidDetails),
     );
   }
 
