@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -93,7 +93,8 @@ class NotificationService {
 
     final now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime scheduledDate =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute)
+            .subtract(const Duration(minutes: 5)); // 5 minutes before
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
@@ -109,8 +110,8 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
-      'Medicine Reminder',
-      'Time to take $medicineName ($dosage)',
+      'Upcoming Medicine Reminder',
+      'In 5 mins: Take $medicineName ($dosage)',
       scheduledDate,
       const NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
@@ -127,8 +128,10 @@ class NotificationService {
     required String labName,
     required DateTime date,
   }) async {
+    // Schedule 3 days before the test at 8:00 AM
     final scheduledDate = tz.TZDateTime.from(
-      DateTime(date.year, date.month, date.day, 8, 0),
+      DateTime(date.year, date.month, date.day, 8, 0)
+          .subtract(const Duration(days: 3)),
       tz.local,
     );
     if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;

@@ -128,7 +128,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
 
     // Check for low stock warnings after taking doses
     for (final med in state.lowSupplyMedicines) {
-      if (med.daysOfSupplyRemaining == 6) { // Exactly 6 days left (just dropped below 7)
+      if (med.daysOfSupplyRemaining == 3) { // Exactly 3 days left
         NotificationService().showRefillWarning(
           id: med.id.hashCode,
           medicineName: med.medicineName,
