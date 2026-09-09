@@ -1043,6 +1043,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           .markNextTestCompleted(test.id);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
+                            content:
+                                Text('${test.testName} marked as completed!')),
                           content: Row(
                             children: [
                               const Icon(Icons.celebration, color: Colors.white),
@@ -1050,17 +1052,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                               Expanded(
                                 child: Text(
                                   'Great job! ${test.testName} completed.\nYour doctor has been notified!',
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold),
+                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                                 ),
                               ),
                             ],
                           ),
                           backgroundColor: AppColors.success,
                           behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                           duration: const Duration(seconds: 4),
                         ),
                       );
