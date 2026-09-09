@@ -1043,8 +1043,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           .markNextTestCompleted(test.id);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                            content:
-                                Text('${test.testName} marked as completed!')),
                           content: Row(
                             children: [
                               const Icon(Icons.celebration, color: Colors.white),

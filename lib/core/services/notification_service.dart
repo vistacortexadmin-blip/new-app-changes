@@ -168,3 +168,4 @@ class NotificationService {
     flutterLocalNotificationsPlugin.cancel(id);
   }
 }
+
