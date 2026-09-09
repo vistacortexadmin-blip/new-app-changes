@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
@@ -15,7 +15,6 @@ class NotificationService {
 
   Future<void> initialize() async {
     tz.initializeTimeZones();
-    // Use the device's local timezone offset to find the correct tz location
     final localOffset = DateTime.now().timeZoneOffset;
     final allLocations = tz.timeZoneDatabase.locations;
     tz.Location? matchedLocation;
@@ -51,12 +50,28 @@ class NotificationService {
   Future<void> requestPermissions() async {
     if (Platform.isAndroid) {
       final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-          flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>();
-
+          flutterLocalNotificationsPlugin
+              .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin>();
       await androidImplementation?.requestNotificationsPermission();
-      await androidImplementation?.requestExactAlarmsPermission();
     }
+  }
+
+  Future<void> showTestNotification() async {
+    const AndroidNotificationDetails androidDetails =
+        AndroidNotificationDetails(
+      'test_now_channel',
+      'Instant Test',
+      channelDescription: 'Immediate test notification',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    await flutterLocalNotificationsPlugin.show(
+      9999,
+      'Notifications are working!',
+      'VistaCortex will remind you to take your medicines on time.',
+      const NotificationDetails(android: androidDetails),
+    );
   }
 
   Future<void> scheduleDailyMedicineReminder({
@@ -66,69 +81,43 @@ class NotificationService {
     required DoseTimeOfDay timeOfDay,
     required String timeString,
   }) async {
-    // Parse timeString e.g., "08:00 AM" to Hour and Minute
     final parts = timeString.split(' ');
     if (parts.length != 2) return;
-    
     final timeParts = parts[0].split(':');
     if (timeParts.length != 2) return;
-    
     int hour = int.parse(timeParts[0]);
     int minute = int.parse(timeParts[1]);
     final isPM = parts[1].toUpperCase() == 'PM';
-    
     if (isPM && hour < 12) hour += 12;
     if (!isPM && hour == 12) hour = 0;
 
     final now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate = tz.TZDateTime(
-      tz.local, now.year, now.month, now.day, hour, minute,
-    );
-    
+    tz.TZDateTime scheduledDate =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     if (scheduledDate.isBefore(now)) {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'medicine_channel_id',
       'Medicine Reminders',
       channelDescription: 'Daily reminders to take your medicine',
       importance: Importance.max,
       priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
     );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
-      'Time for your medicine 💊',
-      'Take $medicineName ($dosage) now.',
+      'Medicine Reminder',
+      'Time to take $medicineName ($dosage)',
       scheduledDate,
-      platformChannelSpecifics,
+      const NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // Repeats daily
+      matchDateTimeComponents: DateTimeComponents.time,
       payload: 'medicine_$id',
-    );
-  }
-
-  // Fires an instant notification immediately — use this to verify the system works
-  Future<void> showTestNotification() async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'test_now_channel',
-      'Instant Test',
-      channelDescription: 'Immediate test notification',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-    await flutterLocalNotificationsPlugin.show(
-      9999,
-      '🔔 Notifications are working!',
-      'VistaCortex will now remind you to take your medicines on time.',
-      const NotificationDetails(android: androidDetails),
     );
   }
 
@@ -138,15 +127,13 @@ class NotificationService {
     required String labName,
     required DateTime date,
   }) async {
-    // Schedule for 8:00 AM on the day of the test
     final scheduledDate = tz.TZDateTime.from(
       DateTime(date.year, date.month, date.day, 8, 0),
       tz.local,
     );
-
     if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
 
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'test_channel_id',
       'Diagnostic Tests',
@@ -154,16 +141,14 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
     );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
-      'Upcoming Diagnostic Test',
-      'You have a $testName at $labName today.',
+      'Upcoming Test Today',
+      'You have a $testName at $labName today. Stay prepared!',
       scheduledDate,
-      platformChannelSpecifics,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      const NotificationDetails(android: androidDetails),
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
@@ -174,7 +159,7 @@ class NotificationService {
     required String medicineName,
     required int daysLeft,
   }) async {
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    const AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
       'refill_channel_id',
       'Refill Warnings',
@@ -182,14 +167,12 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
     );
-    const NotificationDetails platformChannelSpecifics =
-        NotificationDetails(android: androidPlatformChannelSpecifics);
 
     await flutterLocalNotificationsPlugin.show(
       id,
       'Low Stock Alert',
-      'You only have $daysLeft days of $medicineName left. Please order a refill soon.',
-      platformChannelSpecifics,
+      'Only $daysLeft days of $medicineName remaining. Order a refill!',
+      const NotificationDetails(android: androidDetails),
     );
   }
 
@@ -197,4 +180,3 @@ class NotificationService {
     flutterLocalNotificationsPlugin.cancel(id);
   }
 }
-
