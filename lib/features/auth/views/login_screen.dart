@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/auth_service.dart';
@@ -42,8 +43,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _navigatePostAuth({bool forceOnboarding = false}) async {
-    final currentUid = _authService.currentUser?.uid;
-    if (currentUid == null) {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) {
       debugPrint('[Security] No active authenticated session found.');
       return;
     }
@@ -53,19 +54,21 @@ class _LoginScreenState extends State<LoginScreen> {
     final String? profileOwner = prefs.getString('profile_owner_uid');
     if (!mounted) return;
 
-    // Verify that the profile data genuinely belongs to THIS user session
-    final bool isOwnerValid = profileOwner == null || profileOwner == currentUid;
+    // Check both local storage AND if the user already has a configured name in Firebase
+    final bool isOwnerValid = profileOwner == null || profileOwner == currentUser.uid;
+    final bool hasDisplayName = currentUser.displayName != null && currentUser.displayName!.trim().isNotEmpty;
 
-    if (!forceOnboarding && profileCompleted && isOwnerValid) {
+    if (!forceOnboarding && (profileCompleted && isOwnerValid || hasDisplayName)) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const MainNavigationShell()),
         (route) => false,
       );
     } else {
-      Navigator.push(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+        (route) => false,
       );
     }
   }
@@ -86,17 +89,48 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
         if (mounted) {
+          if (_authService.currentUser?.isLocalDemo == true) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Firebase Auth not active in Console. Switched to Local Dev Mode.'),
+                backgroundColor: AppColors.primary,
+                duration: Duration(seconds: 4),
+              ),
+            );
+          }
           await _navigatePostAuth(forceOnboarding: _isSignUp);
         }
       } catch (e) {
         debugPrint('[Auth] Sign In / Sign Up error: $e');
+        final errorMsg = _authService.formatAuthError(e);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Authentication failed: ${e.toString().replaceAll("Exception: ", "")}'),
-              backgroundColor: AppColors.error,
-            ),
-          );
+          // If email is already in use during signup, offer auto-toggle to Sign In
+          if (_isSignUp && (errorMsg.contains('already in use') || errorMsg.contains('already exists'))) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMsg),
+                backgroundColor: AppColors.primary,
+                action: SnackBarAction(
+                  label: 'Sign In',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    setState(() {
+                      _isSignUp = false;
+                      _confirmPasswordController.clear();
+                    });
+                  },
+                ),
+                duration: const Duration(seconds: 6),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMsg),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
         }
       } finally {
         if (mounted) {
@@ -113,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (credential != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Welcome, ${credential.user?.displayName ?? "User"}!'),
+            content: Text('Welcome, ${credential.displayName ?? "User"}!'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -123,10 +157,11 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     } catch (e) {
       debugPrint('[Auth] Google Sign In error: $e');
+      final errorMsg = _authService.formatAuthError(e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Google Sign-In failed: ${e.toString().replaceAll("Exception: ", "")}'),
+            content: Text(errorMsg),
             backgroundColor: AppColors.error,
           ),
         );
@@ -134,6 +169,40 @@ class _LoginScreenState extends State<LoginScreen> {
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your email above to receive a password reset link.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Password reset link has been sent to $email.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_authService.formatAuthError(e)),
+            backgroundColor: AppColors.error,
+          ),
+        );
       }
     }
   }
@@ -352,14 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Password reset link sent to your email'),
-                                    backgroundColor: AppColors.primary,
-                                  ),
-                                );
-                              },
+                              onPressed: _handleForgotPassword,
                               child: const Text(
                                 'Forgot Password?',
                                 style: TextStyle(

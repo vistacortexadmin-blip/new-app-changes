@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../core/services/auth_service.dart';
 import 'terms_conditions_screen.dart';
 
 class PrivacyPolicyScreen extends StatefulWidget {
@@ -29,7 +30,13 @@ class _PrivacyPolicyScreenState extends State<PrivacyPolicyScreen> {
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              await AuthService().signOut();
+            }
+          },
           icon: const Icon(Icons.arrow_back_ios_rounded, size: 20),
         ),
         title: const Text(
