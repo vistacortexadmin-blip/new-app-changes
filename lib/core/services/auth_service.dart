@@ -120,7 +120,7 @@ class AuthService {
     return null;
   }
 
-  Future<AuthUser> _createLocalSession(String email, {String? displayName, String? photoUrl}) async {
+  Future<AuthUser> createLocalSession(String email, {String? displayName, String? photoUrl}) async {
     final uid = 'dev_${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
     final user = AuthUser(
       uid: uid,
@@ -140,15 +140,20 @@ class AuthService {
     return user;
   }
 
-  bool _isConfigurationNotFoundError(dynamic e) {
-    final str = e.toString();
+  bool isConfigurationNotFoundError(dynamic e) {
+    final str = e.toString().toUpperCase();
+    final msg = (e is FirebaseAuthException ? (e.message ?? '') : '').toUpperCase();
+    final code = (e is FirebaseAuthException ? e.code : '').toLowerCase();
     return str.contains('CONFIGURATION_NOT_FOUND') ||
-        str.contains('configuration-not-found');
+        msg.contains('CONFIGURATION_NOT_FOUND') ||
+        str.contains('CONFIGURATION-NOT-FOUND') ||
+        code == 'configuration-not-found' ||
+        (code == 'unknown' && (str.contains('INTERNAL ERROR') || msg.contains('INTERNAL ERROR')));
   }
 
   /// Formats raw Firebase exceptions into friendly user messages
   String formatAuthError(dynamic error) {
-    if (_isConfigurationNotFoundError(error)) {
+    if (isConfigurationNotFoundError(error)) {
       return 'Firebase Authentication is not yet enabled in Firebase Console. Switched to Local Mode.';
     }
     if (error is FirebaseAuthException) {
@@ -216,9 +221,9 @@ class AuthService {
       return _currentUser;
     } catch (e) {
       debugPrint('[Auth] Error during Google Sign-In: $e');
-      if (_isConfigurationNotFoundError(e) && googleUser != null) {
+      if (isConfigurationNotFoundError(e) && googleUser != null) {
         debugPrint('[Auth] CONFIGURATION_NOT_FOUND: Logging in via Local Dev fallback');
-        final localUser = await _createLocalSession(
+        final localUser = await createLocalSession(
           googleUser.email,
           displayName: googleUser.displayName,
           photoUrl: googleUser.photoUrl,
@@ -249,9 +254,9 @@ class AuthService {
       return _currentUser!;
     } catch (e) {
       debugPrint('[Auth] Email Sign-In error: $e');
-      if (_isConfigurationNotFoundError(e)) {
+      if (isConfigurationNotFoundError(e)) {
         debugPrint('[Auth] CONFIGURATION_NOT_FOUND: Falling back to local dev session');
-        final localUser = await _createLocalSession(email.trim());
+        final localUser = await createLocalSession(email.trim());
         return localUser;
       }
       rethrow;
@@ -278,9 +283,9 @@ class AuthService {
       return _currentUser!;
     } catch (e) {
       debugPrint('[Auth] Email Sign-Up error: $e');
-      if (_isConfigurationNotFoundError(e)) {
+      if (isConfigurationNotFoundError(e)) {
         debugPrint('[Auth] CONFIGURATION_NOT_FOUND: Falling back to local dev session');
-        final localUser = await _createLocalSession(email.trim());
+        final localUser = await createLocalSession(email.trim());
         return localUser;
       }
       rethrow;

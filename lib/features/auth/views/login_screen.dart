@@ -102,6 +102,20 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } catch (e) {
         debugPrint('[Auth] Sign In / Sign Up error: $e');
+        if (_authService.isConfigurationNotFoundError(e)) {
+          await _authService.createLocalSession(_emailController.text.trim());
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Firebase Auth not active in Console yet. Continuing in Local Mode.'),
+                backgroundColor: AppColors.primary,
+                duration: Duration(seconds: 4),
+              ),
+            );
+            await _navigatePostAuth(forceOnboarding: _isSignUp);
+          }
+          return;
+        }
         final errorMsg = _authService.formatAuthError(e);
         if (mounted) {
           // If email is already in use during signup, offer auto-toggle to Sign In
