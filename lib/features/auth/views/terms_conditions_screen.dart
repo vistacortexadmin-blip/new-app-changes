@@ -12,12 +12,51 @@ class TermsConditionsScreen extends StatefulWidget {
 
 class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
   bool _accepted = false;
+  bool _hasScrolledToBottom = false;
+  late final ScrollController _scrollController;
   final _analytics = AnalyticsService();
 
   @override
   void initState() {
     super.initState();
     _analytics.logScreen('terms_conditions_screen');
+    _scrollController = ScrollController()..addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        if (_scrollController.position.maxScrollExtent <= 0) {
+          if (!_hasScrolledToBottom && mounted) {
+            setState(() => _hasScrolledToBottom = true);
+          }
+        }
+      }
+    });
+  }
+
+  void _onScroll() {
+    if (!_hasScrolledToBottom && _scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      if (maxScroll <= 0 || currentScroll >= (maxScroll - 50)) {
+        setState(() => _hasScrolledToBottom = true);
+      }
+    }
+  }
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeOutCubic,
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   @override
@@ -51,6 +90,7 @@ class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
           // Scrollable terms content
           Expanded(
             child: SingleChildScrollView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,7 +196,7 @@ class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
 
           // Bottom bar with checkbox and Next button
           Container(
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            padding: const EdgeInsets.fromLTRB(24, 14, 24, 24),
             decoration: const BoxDecoration(
               color: Colors.white,
               border: Border(
@@ -168,42 +208,95 @@ class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // Scroll hint banner when user hasn't reached the bottom
+                  if (!_hasScrolledToBottom) ...[
+                    GestureDetector(
+                      onTap: _scrollToBottom,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F3FF),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.accentPurple.withValues(alpha: 0.3),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Please scroll down to read the full terms',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.accentPurple,
+                              ),
+                            ),
+                            SizedBox(width: 6),
+                            Icon(Icons.arrow_downward_rounded, size: 14, color: AppColors.accentPurple),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
                   // Checkbox row
-                  GestureDetector(
-                    onTap: () => setState(() => _accepted = !_accepted),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: Checkbox(
-                            value: _accepted,
-                            onChanged: (val) {
-                              setState(() => _accepted = val ?? false);
-                            },
-                            activeColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            side: const BorderSide(
-                              color: AppColors.textSecondary,
-                              width: 1.5,
+                  InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: _hasScrolledToBottom
+                        ? () => setState(() => _accepted = !_accepted)
+                        : () {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Please read and scroll to the bottom of the terms first.'),
+                                duration: Duration(seconds: 2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            _scrollToBottom();
+                          },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: Checkbox(
+                              value: _accepted,
+                              onChanged: _hasScrolledToBottom
+                                  ? (val) => setState(() => _accepted = val ?? false)
+                                  : null,
+                              activeColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              side: BorderSide(
+                                color: _hasScrolledToBottom
+                                    ? AppColors.textSecondary
+                                    : AppColors.textMuted.withValues(alpha: 0.4),
+                                width: 1.5,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'I have read and agree to the Terms & Conditions',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'I have read and agree to the Terms & Conditions',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _hasScrolledToBottom
+                                    ? AppColors.textPrimary
+                                    : AppColors.textMuted,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -214,15 +307,17 @@ class _TermsConditionsScreenState extends State<TermsConditionsScreen> {
                     height: 54,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _accepted ? AppColors.primary : const Color(0xFFCBD5E1),
+                        backgroundColor: (_hasScrolledToBottom && _accepted)
+                            ? AppColors.primary
+                            : const Color(0xFFCBD5E1),
                         foregroundColor: Colors.white,
-                        elevation: _accepted ? 4 : 0,
+                        elevation: (_hasScrolledToBottom && _accepted) ? 4 : 0,
                         shadowColor: AppColors.primary.withValues(alpha: 0.4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(28),
                         ),
                       ),
-                      onPressed: _accepted
+                      onPressed: (_hasScrolledToBottom && _accepted)
                           ? () {
                               Navigator.push(
                                 context,
