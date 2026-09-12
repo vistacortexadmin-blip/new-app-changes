@@ -154,7 +154,7 @@ class AuthService {
   /// Formats raw Firebase exceptions into friendly user messages
   String formatAuthError(dynamic error) {
     if (isConfigurationNotFoundError(error)) {
-      return 'Firebase Authentication is not yet enabled in Firebase Console. Switched to Local Mode.';
+      return 'Firebase Authentication is not enabled in Firebase Console. Please enable Email/Password under Authentication > Sign-in method.';
     }
     if (error is FirebaseAuthException) {
       switch (error.code) {
