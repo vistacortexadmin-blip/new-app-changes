@@ -168,7 +168,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       // Save user profile to persistent local storage bound to authenticated UID
       final prefs = await SharedPreferences.getInstance();
-      final currentUid = AuthService().currentUser?.uid ?? 'local_user';
+      final currentUser = AuthService().currentUser;
+      final currentUid = currentUser?.uid ?? 'local_user';
+      if (currentUser != null && _nameController.text.trim().isNotEmpty) {
+        try {
+          await currentUser.updateDisplayName(_nameController.text.trim());
+        } catch (e) {
+          debugPrint('[ProfileSetup] Notice updating Firebase displayName: $e');
+        }
+      }
       await prefs.setBool('profile_completed', true);
       await prefs.setString('profile_owner_uid', currentUid);
       await prefs.setString('user_name', _nameController.text.trim());

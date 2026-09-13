@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'core/config/app_colors.dart';
 import 'core/config/app_theme.dart';
@@ -9,6 +8,7 @@ import 'core/services/auth_service.dart';
 import 'core/security/security_audit_model.dart';
 import 'core/security/security_audit_service.dart';
 import 'features/auth/views/welcome_screen.dart';
+import 'features/auth/views/privacy_policy_screen.dart';
 import 'features/dashboard/views/dashboard_screen.dart';
 import 'features/reports/views/reports_screen.dart';
 import 'features/ai_chat/views/ai_chat_screen.dart';
@@ -43,7 +43,7 @@ class AuthGate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
+    return StreamBuilder<AuthUser?>(
       stream: AuthService().authStateChanges,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -60,9 +60,9 @@ class AuthGate extends StatelessWidget {
           return const WelcomeScreen();
         }
 
-        // Authenticated session exists: verify profile ownership
+        // Authenticated session exists: verify profile completion
         return FutureBuilder<bool>(
-          future: _isProfileCompleted(user.uid),
+          future: _isProfileCompleted(user),
           builder: (context, profileSnapshot) {
             if (profileSnapshot.connectionState == ConnectionState.waiting) {
               return const Scaffold(
@@ -75,18 +75,20 @@ class AuthGate extends StatelessWidget {
             if (profileSnapshot.data == true) {
               return const MainNavigationShell();
             }
-            return const WelcomeScreen();
+            // Authenticated user completing onboarding sequence
+            return const PrivacyPolicyScreen();
           },
         );
       },
     );
   }
 
-  Future<bool> _isProfileCompleted(String uid) async {
+  Future<bool> _isProfileCompleted(AuthUser user) async {
     final prefs = await SharedPreferences.getInstance();
     final completed = prefs.getBool('profile_completed') ?? false;
     final owner = prefs.getString('profile_owner_uid');
-    return completed && (owner == null || owner == uid);
+    final hasDisplayName = user.displayName != null && user.displayName!.trim().isNotEmpty;
+    return hasDisplayName || (completed && (owner == null || owner == user.uid));
   }
 }
 
