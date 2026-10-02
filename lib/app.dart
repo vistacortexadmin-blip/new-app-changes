@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'core/config/app_colors.dart';
 import 'core/config/app_theme.dart';
 import 'core/providers/theme_provider.dart';
@@ -8,7 +7,6 @@ import 'core/services/auth_service.dart';
 import 'core/security/security_audit_model.dart';
 import 'core/security/security_audit_service.dart';
 import 'features/auth/views/welcome_screen.dart';
-import 'features/auth/views/privacy_policy_screen.dart';
 import 'features/dashboard/views/dashboard_screen.dart';
 import 'features/reports/views/reports_screen.dart';
 import 'features/ai_chat/views/ai_chat_screen.dart';
@@ -60,35 +58,9 @@ class AuthGate extends StatelessWidget {
           return const WelcomeScreen();
         }
 
-        // Authenticated session exists: verify profile completion
-        return FutureBuilder<bool>(
-          future: _isProfileCompleted(user),
-          builder: (context, profileSnapshot) {
-            if (profileSnapshot.connectionState == ConnectionState.waiting) {
-              return const Scaffold(
-                backgroundColor: Color(0xFF0A0F1D),
-                body: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              );
-            }
-            if (profileSnapshot.data == true) {
-              return const MainNavigationShell();
-            }
-            // Authenticated user completing onboarding sequence
-            return const PrivacyPolicyScreen();
-          },
-        );
+        return const MainNavigationShell();
       },
     );
-  }
-
-  Future<bool> _isProfileCompleted(AuthUser user) async {
-    final prefs = await SharedPreferences.getInstance();
-    final completed = prefs.getBool('profile_completed') ?? false;
-    final owner = prefs.getString('profile_owner_uid');
-    final hasDisplayName = user.displayName != null && user.displayName!.trim().isNotEmpty;
-    return hasDisplayName || (completed && (owner == null || owner == user.uid));
   }
 }
 
@@ -124,7 +96,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
           resourceId: 'unauthorized_shell_entry',
           dataClassification: DataClassification.security,
           outcome: AuditOutcome.denied,
-          failureReason: 'Attempted to access MainNavigationShell without active Firebase credentials',
+          failureReason:
+              'Attempted to access MainNavigationShell without active Firebase credentials',
         );
         if (mounted) {
           Navigator.pushAndRemoveUntil(
@@ -147,7 +120,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
-    final subtitleColor = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+    final subtitleColor =
+        isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
 
     showModalBottomSheet(
       context: context,
@@ -156,7 +130,7 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
+        return SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -183,7 +157,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 isDark: isDark,
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const TestBookingScreen()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const TestBookingScreen()));
                 },
               ),
               _moreMenuTile(
@@ -198,7 +175,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 isDark: isDark,
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const RecoveryCareScreen()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const RecoveryCareScreen()));
                 },
               ),
               _moreMenuTile(
@@ -213,7 +193,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 isDark: isDark,
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const FamilyConnectScreen()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const FamilyConnectScreen()));
                 },
               ),
               _moreMenuTile(
@@ -228,7 +211,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 isDark: isDark,
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SecurityAuditScreen()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SecurityAuditScreen()));
                 },
               ),
               Divider(
@@ -248,7 +234,10 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 isDark: isDark,
                 onTap: () {
                   Navigator.pop(context);
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsScreen()));
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const SettingsScreen()));
                 },
               ),
               _moreMenuTile(
@@ -296,9 +285,13 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
         ),
         child: Icon(icon, color: iconColor),
       ),
-      title: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
-      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: subtitleColor)),
-      trailing: Icon(Icons.chevron_right_rounded, color: chevronColor ?? (isDark ? const Color(0xFF64748B) : null)),
+      title: Text(title,
+          style: TextStyle(
+              fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
+      subtitle:
+          Text(subtitle, style: TextStyle(fontSize: 12, color: subtitleColor)),
+      trailing: Icon(Icons.chevron_right_rounded,
+          color: chevronColor ?? (isDark ? const Color(0xFF64748B) : null)),
       onTap: onTap,
     );
   }
@@ -318,7 +311,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 color: const Color(0xFFFEF2F2),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 22),
+              child: const Icon(Icons.logout_rounded,
+                  color: AppColors.error, size: 22),
             ),
             const SizedBox(width: 12),
             Text(
@@ -345,7 +339,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
             child: Text(
               'Cancel',
               style: TextStyle(
-                color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
+                color:
+                    isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -355,7 +350,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -374,7 +370,8 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 );
               }
             },
-            child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text('Sign Out',
+                style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -421,33 +418,54 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
               }
             },
             backgroundColor: isDark ? const Color(0xFF0F172A) : Colors.white,
-            indicatorColor: isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF),
+            indicatorColor:
+                isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF),
             surfaceTintColor: Colors.transparent,
             labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
             destinations: [
               NavigationDestination(
-                icon: Icon(Icons.home_outlined, color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary),
-                selectedIcon: const Icon(Icons.home_rounded, color: AppColors.primary),
+                icon: Icon(Icons.home_outlined,
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : AppColors.textSecondary),
+                selectedIcon:
+                    const Icon(Icons.home_rounded, color: AppColors.primary),
                 label: 'Home',
               ),
               NavigationDestination(
-                icon: Icon(Icons.description_outlined, color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary),
-                selectedIcon: const Icon(Icons.description_rounded, color: AppColors.primary),
+                icon: Icon(Icons.description_outlined,
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : AppColors.textSecondary),
+                selectedIcon: const Icon(Icons.description_rounded,
+                    color: AppColors.primary),
                 label: 'Reports',
               ),
               NavigationDestination(
-                icon: Icon(Icons.auto_awesome_outlined, color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary),
-                selectedIcon: const Icon(Icons.auto_awesome_rounded, color: AppColors.primary),
+                icon: Icon(Icons.auto_awesome_outlined,
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : AppColors.textSecondary),
+                selectedIcon: const Icon(Icons.auto_awesome_rounded,
+                    color: AppColors.primary),
                 label: 'AI',
               ),
               NavigationDestination(
-                icon: Icon(Icons.alarm_outlined, color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary),
-                selectedIcon: const Icon(Icons.alarm_rounded, color: AppColors.primary),
+                icon: Icon(Icons.alarm_outlined,
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : AppColors.textSecondary),
+                selectedIcon:
+                    const Icon(Icons.alarm_rounded, color: AppColors.primary),
                 label: 'Reminders',
               ),
               NavigationDestination(
-                icon: Icon(Icons.widgets_outlined, color: isDark ? const Color(0xFF64748B) : AppColors.textSecondary),
-                selectedIcon: const Icon(Icons.widgets_rounded, color: AppColors.primary),
+                icon: Icon(Icons.widgets_outlined,
+                    color: isDark
+                        ? const Color(0xFF64748B)
+                        : AppColors.textSecondary),
+                selectedIcon:
+                    const Icon(Icons.widgets_rounded, color: AppColors.primary),
                 label: 'More',
               ),
             ],

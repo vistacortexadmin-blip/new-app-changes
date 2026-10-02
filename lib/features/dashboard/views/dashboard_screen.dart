@@ -27,7 +27,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
-  String _userName = 'Sritan';
+  String _userName = 'User';
   String? _userImagePath;
   String? _userAge;
   String? _userGender;
@@ -50,11 +50,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final weight = prefs.getString('user_weight');
     final height = prefs.getString('user_height');
     final bloodGroup = prefs.getString('user_blood_group');
+    final authUser = AuthService().currentUser;
+    final authName = authUser?.displayName?.trim();
+    final emailName = authUser?.email?.split('@').first.trim();
 
     if (mounted) {
       setState(() {
         if (fullName != null && fullName.trim().isNotEmpty) {
           _userName = fullName.trim().split(' ').first;
+        } else if (authName != null && authName.isNotEmpty) {
+          _userName = authName.split(' ').first;
+        } else if (emailName != null && emailName.isNotEmpty) {
+          _userName = emailName;
         }
         _userImagePath = imagePath;
         _userAge = age;
@@ -81,7 +88,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 color: const Color(0xFFFEF2F2),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 22),
+              child: const Icon(Icons.logout_rounded,
+                  color: AppColors.error, size: 22),
             ),
             const SizedBox(width: 12),
             Text(
@@ -108,7 +116,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             child: Text(
               'Cancel',
               style: TextStyle(
-                color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
+                color:
+                    isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -118,7 +127,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
@@ -137,7 +147,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 );
               }
             },
-            child: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w700)),
+            child: const Text('Sign Out',
+                style: TextStyle(fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -148,7 +159,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final surfaceColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+    final textSecondary =
+        isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
 
     showModalBottomSheet(
       context: context,
@@ -168,12 +180,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   width: 72,
                   height: 72,
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E3A5F) : AppColors.primarySurface,
+                    color: isDark
+                        ? const Color(0xFF1E3A5F)
+                        : AppColors.primarySurface,
                     shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 2),
+                    border: Border.all(
+                        color: AppColors.primary.withValues(alpha: 0.3),
+                        width: 2),
                   ),
                   child: ClipOval(
-                    child: _userImagePath != null && File(_userImagePath!).existsSync()
+                    child: _userImagePath != null &&
+                            File(_userImagePath!).existsSync()
                         ? Image.file(
                             File(_userImagePath!),
                             width: 72,
@@ -182,8 +199,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           )
                         : Center(
                             child: Text(
-                              _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
-                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              _userName.isNotEmpty
+                                  ? _userName[0].toUpperCase()
+                                  : 'U',
+                              style: const TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary),
                             ),
                           ),
                   ),
@@ -191,7 +213,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 const SizedBox(height: 12),
                 Text(
                   _userName,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: textColor),
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: textColor),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -219,25 +244,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-                Divider(color: isDark ? const Color(0xFF334155) : AppColors.divider),
+                Divider(
+                    color:
+                        isDark ? const Color(0xFF334155) : AppColors.divider),
 
                 // Actions: Edit Profile, Settings & Sign Out
                 ListTile(
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E3A5F) : AppColors.primarySurface,
+                      color: isDark
+                          ? const Color(0xFF1E3A5F)
+                          : AppColors.primarySurface,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                    child: const Icon(Icons.edit_outlined,
+                        color: AppColors.primary, size: 20),
                   ),
-                  title: Text('Edit Health Profile', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textColor)),
-                  trailing: Icon(Icons.chevron_right_rounded, size: 20, color: textSecondary),
+                  title: Text('Edit Health Profile',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: textColor)),
+                  trailing: Icon(Icons.chevron_right_rounded,
+                      size: 20, color: textSecondary),
                   onTap: () {
                     Navigator.pop(ctx);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const ProfileSetupScreen()),
                     ).then((_) => _loadUserProfile());
                   },
                 ),
@@ -245,13 +281,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   leading: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF334155) : const Color(0xFFF1F5F9),
+                      color: isDark
+                          ? const Color(0xFF334155)
+                          : const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(Icons.settings_outlined, color: isDark ? Colors.white70 : const Color(0xFF64748B), size: 20),
+                    child: Icon(Icons.settings_outlined,
+                        color:
+                            isDark ? Colors.white70 : const Color(0xFF64748B),
+                        size: 20),
                   ),
-                  title: Text('Settings', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: textColor)),
-                  trailing: Icon(Icons.chevron_right_rounded, size: 20, color: textSecondary),
+                  title: Text('Settings',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                          color: textColor)),
+                  trailing: Icon(Icons.chevron_right_rounded,
+                      size: 20, color: textSecondary),
                   onTap: () {
                     Navigator.pop(ctx);
                     Navigator.push(
@@ -267,10 +313,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       color: const Color(0xFFFEF2F2),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 20),
+                    child: const Icon(Icons.logout_rounded,
+                        color: AppColors.error, size: 20),
                   ),
-                  title: const Text('Sign Out', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: AppColors.error)),
-                  trailing: const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.error),
+                  title: const Text('Sign Out',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: AppColors.error)),
+                  trailing: const Icon(Icons.chevron_right_rounded,
+                      size: 20, color: AppColors.error),
                   onTap: () {
                     Navigator.pop(ctx);
                     _confirmSignOut(context);
@@ -290,7 +342,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? const Color(0xFF334155) : AppColors.border),
+        border: Border.all(
+            color: isDark ? const Color(0xFF334155) : AppColors.border),
       ),
       child: Text(
         label,
@@ -309,7 +362,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+    final textSecondary =
+        isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
     final borderColor = isDark ? const Color(0xFF334155) : AppColors.border;
 
     return Scaffold(
@@ -337,18 +391,23 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+                                  colors: [
+                                    Color(0xFF3B82F6),
+                                    Color(0xFF1D4ED8)
+                                  ],
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withValues(alpha: 0.2),
+                                    color: AppColors.primary
+                                        .withValues(alpha: 0.2),
                                     blurRadius: 8,
                                     offset: const Offset(0, 3),
                                   ),
                                 ],
                               ),
                               child: ClipOval(
-                                child: _userImagePath != null && File(_userImagePath!).existsSync()
+                                child: _userImagePath != null &&
+                                        File(_userImagePath!).existsSync()
                                     ? Image.file(
                                         File(_userImagePath!),
                                         width: 48,
@@ -357,7 +416,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                       )
                                     : Center(
                                         child: Text(
-                                          _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+                                          _userName.isNotEmpty
+                                              ? _userName[0].toUpperCase()
+                                              : 'U',
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontWeight: FontWeight.bold,
@@ -376,7 +437,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 decoration: BoxDecoration(
                                   color: const Color(0xFF10B981),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: isDark ? const Color(0xFF0F172A) : Colors.white, width: 2),
+                                  border: Border.all(
+                                      color: isDark
+                                          ? const Color(0xFF0F172A)
+                                          : Colors.white,
+                                      width: 2),
                                 ),
                               ),
                             ),
@@ -421,17 +486,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           border: Border.all(color: borderColor),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                              color: Colors.black
+                                  .withValues(alpha: isDark ? 0.2 : 0.03),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
                           ],
                         ),
                         child: IconButton(
-                          icon: Icon(Icons.notifications_outlined, size: 20, color: textColor),
+                          icon: Icon(Icons.notifications_outlined,
+                              size: 20, color: textColor),
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('No new notifications today.')),
+                              const SnackBar(
+                                  content: Text('No new notifications today.')),
                             );
                           },
                         ),
@@ -453,14 +521,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                   decoration: BoxDecoration(
                     color: cardBg,
                     borderRadius: BorderRadius.circular(30),
                     border: Border.all(color: borderColor),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
+                        color:
+                            Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -468,7 +538,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.search_rounded, color: textSecondary, size: 20),
+                      Icon(Icons.search_rounded,
+                          color: textSecondary, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
@@ -528,7 +599,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             style: TextStyle(
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
-                              color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF065F46),
+                              color: isDark
+                                  ? const Color(0xFFA7F3D0)
+                                  : const Color(0xFF065F46),
                               letterSpacing: -0.3,
                             ),
                           ),
@@ -538,7 +611,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: isDark ? const Color(0xFF6EE7B7) : const Color(0xFF047857),
+                              color: isDark
+                                  ? const Color(0xFF6EE7B7)
+                                  : const Color(0xFF047857),
                             ),
                           ),
                         ],
@@ -554,7 +629,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       child: Center(
                         child: Icon(
                           Icons.eco_rounded,
-                          color: isDark ? const Color(0xFFA7F3D0) : const Color(0xFF10B981),
+                          color: isDark
+                              ? const Color(0xFFA7F3D0)
+                              : const Color(0xFF10B981),
                           size: 24,
                         ),
                       ),
@@ -565,7 +642,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 22),
 
               // 4. 6-Card Health Hub Grid
-              _buildFeatureGrid(context, reportsState, isDark, cardBg, textColor, textSecondary, borderColor),
+              _buildFeatureGrid(context, reportsState, isDark, cardBg,
+                  textColor, textSecondary, borderColor),
               const SizedBox(height: 24),
 
               // 5. Your Health Summary Section
@@ -599,11 +677,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Row(
                 children: [
                   _buildMetricCard(
-                    count: '3',
+                    count: reportsState.reports.length.toString(),
                     label: 'Reports Added',
                     countColor: AppColors.primary,
-                    bgColor: isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF),
-                    borderColor: isDark ? const Color(0xFF2563EB).withValues(alpha: 0.4) : const Color(0xFFBFDBFE),
+                    bgColor: isDark
+                        ? const Color(0xFF1E3A5F)
+                        : const Color(0xFFEFF6FF),
+                    borderColor: isDark
+                        ? const Color(0xFF2563EB).withValues(alpha: 0.4)
+                        : const Color(0xFFBFDBFE),
                     labelColor: textColor,
                     onTap: () => widget.onNavigateTab(1),
                   ),
@@ -612,8 +694,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     count: '2',
                     label: 'Reminders Today',
                     countColor: const Color(0xFFF97316),
-                    bgColor: isDark ? const Color(0xFF43281C) : const Color(0xFFFFF7ED),
-                    borderColor: isDark ? const Color(0xFFF97316).withValues(alpha: 0.4) : const Color(0xFFFED7AA),
+                    bgColor: isDark
+                        ? const Color(0xFF43281C)
+                        : const Color(0xFFFFF7ED),
+                    borderColor: isDark
+                        ? const Color(0xFFF97316).withValues(alpha: 0.4)
+                        : const Color(0xFFFED7AA),
                     labelColor: textColor,
                     onTap: () => widget.onNavigateTab(3),
                   ),
@@ -622,8 +708,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     count: '1',
                     label: 'Upcoming Test',
                     countColor: const Color(0xFF0D9488),
-                    bgColor: isDark ? const Color(0xFF134E4A) : const Color(0xFFF0FDFA),
-                    borderColor: isDark ? const Color(0xFF0D9488).withValues(alpha: 0.4) : const Color(0xFF99F6E4),
+                    bgColor: isDark
+                        ? const Color(0xFF134E4A)
+                        : const Color(0xFFF0FDFA),
+                    borderColor: isDark
+                        ? const Color(0xFF0D9488).withValues(alpha: 0.4)
+                        : const Color(0xFF99F6E4),
                     labelColor: textColor,
                     onTap: () {
                       Navigator.push(
@@ -662,7 +752,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildGridItem(
               icon: Icons.description_rounded,
               iconColor: const Color(0xFF10B981),
-              iconBgColor: isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5),
+              iconBgColor:
+                  isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5),
               title: 'Reports',
               subtitle: 'Store & manage',
               cardBg: cardBg,
@@ -675,7 +766,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildGridItem(
               icon: Icons.auto_awesome_rounded,
               iconColor: const Color(0xFF8B5CF6),
-              iconBgColor: isDark ? const Color(0xFF3B1E6D) : const Color(0xFFF5F3FF),
+              iconBgColor:
+                  isDark ? const Color(0xFF3B1E6D) : const Color(0xFFF5F3FF),
               title: 'Analysis',
               subtitle: 'AI insights',
               cardBg: cardBg,
@@ -701,7 +793,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildGridItem(
               icon: Icons.alarm_rounded,
               iconColor: const Color(0xFFF97316),
-              iconBgColor: isDark ? const Color(0xFF43281C) : const Color(0xFFFFF7ED),
+              iconBgColor:
+                  isDark ? const Color(0xFF43281C) : const Color(0xFFFFF7ED),
               title: 'Reminders',
               subtitle: 'Never miss',
               cardBg: cardBg,
@@ -720,7 +813,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildGridItem(
               icon: Icons.calendar_month_rounded,
               iconColor: const Color(0xFF2563EB),
-              iconBgColor: isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF),
+              iconBgColor:
+                  isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF),
               title: 'Test Booking',
               subtitle: 'Book tests',
               cardBg: cardBg,
@@ -740,7 +834,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildGridItem(
               icon: Icons.health_and_safety_rounded,
               iconColor: const Color(0xFFEC4899),
-              iconBgColor: isDark ? const Color(0xFF50123C) : const Color(0xFFFDF2F8),
+              iconBgColor:
+                  isDark ? const Color(0xFF50123C) : const Color(0xFFFDF2F8),
               title: 'Surgery Care',
               subtitle: 'Guidance & recovery',
               cardBg: cardBg,
@@ -760,7 +855,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             _buildGridItem(
               icon: Icons.family_restroom_rounded,
               iconColor: const Color(0xFF6366F1),
-              iconBgColor: isDark ? const Color(0xFF2D2B69) : const Color(0xFFEEF2FF),
+              iconBgColor:
+                  isDark ? const Color(0xFF2D2B69) : const Color(0xFFEEF2FF),
               title: 'Family',
               subtitle: 'Stay together',
               cardBg: cardBg,

@@ -12,15 +12,17 @@ enum ValueStatus {
   normal,
   high,
   low,
-  critical,
+  criticalHigh,
+  criticalLow,
 }
 
 class TrendCalculator {
-  static TrendDirection calculateTrend(double previous, double current, {double tolerance = 0.03}) {
+  static TrendDirection calculateTrend(double previous, double current,
+      {double tolerance = 0.03}) {
     if (previous <= 0) return TrendDirection.unspecified;
     final diff = current - previous;
     final percentDiff = (diff / previous).abs();
-    
+
     if (percentDiff < tolerance) {
       return TrendDirection.stable;
     } else if (diff > 0) {
@@ -30,11 +32,16 @@ class TrendCalculator {
     }
   }
 
-  static ValueStatus evaluateStatus(double value, double minRange, double maxRange) {
+  static ValueStatus evaluateStatus(
+      double value, double minRange, double maxRange) {
     if (value < minRange) {
-      return (value < minRange * 0.7) ? ValueStatus.critical : ValueStatus.low;
+      return (value < minRange * 0.7)
+          ? ValueStatus.criticalLow
+          : ValueStatus.low;
     } else if (value > maxRange) {
-      return (value > maxRange * 1.3) ? ValueStatus.critical : ValueStatus.high;
+      return (value > maxRange * 1.3)
+          ? ValueStatus.criticalHigh
+          : ValueStatus.high;
     }
     return ValueStatus.normal;
   }
@@ -47,7 +54,8 @@ class TrendCalculator {
         return AppColors.accentBlue;
       case ValueStatus.high:
         return AppColors.warning;
-      case ValueStatus.critical:
+      case ValueStatus.criticalHigh:
+      case ValueStatus.criticalLow:
         return AppColors.error;
     }
   }
@@ -57,11 +65,16 @@ class TrendCalculator {
       case ValueStatus.normal:
         return 'Normal';
       case ValueStatus.low:
-        return 'Low';
+        return 'Borderline Low';
       case ValueStatus.high:
-        return 'High';
-      case ValueStatus.critical:
-        return 'Critical Alert';
+        return 'Borderline High';
+      case ValueStatus.criticalHigh:
+        return 'Critical High';
+      case ValueStatus.criticalLow:
+        return 'Critical Low';
     }
   }
+
+  static bool isCritical(ValueStatus status) =>
+      status == ValueStatus.criticalHigh || status == ValueStatus.criticalLow;
 }
