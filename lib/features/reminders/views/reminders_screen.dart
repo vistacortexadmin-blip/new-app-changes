@@ -467,6 +467,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             ),
             ElevatedButton(
               onPressed: () {
+                Navigator.pop(context);
                 ref.read(remindersProvider.notifier).markDoseSkipped(
                       medicineId: medId,
                       timeOfDay: timeOfDay,
@@ -474,7 +475,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           ? controller.text
                           : 'Patient elected to skip',
                     );
-                Navigator.pop(context);
               },
               child: const Text('Submit'),
             ),
