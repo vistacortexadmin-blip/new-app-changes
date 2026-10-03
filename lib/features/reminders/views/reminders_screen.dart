@@ -32,7 +32,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,7 +45,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -53,16 +53,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Stay on track with your health.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -82,7 +82,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.add, color: Colors.white, size: 24),
+                      icon: Icon(Icons.add, color: Theme.of(context).cardColor, size: 24),
                       onPressed: () {
                         if (_tabController.index == 2) {
                           _showAddTestModal(context);
@@ -101,7 +101,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             TabBar(
               controller: _tabController,
               labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
+              unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               indicatorColor: AppColors.primary,
               tabs: const [
                 Tab(text: 'Doses'),
@@ -144,9 +144,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Row(
             children: [
@@ -159,7 +159,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     CircularProgressIndicator(
                       value: adherence,
                       strokeWidth: 6,
-                      backgroundColor: AppColors.border,
+                      backgroundColor: Theme.of(context).dividerColor,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         adherence >= 0.8
                             ? AppColors.success
@@ -179,7 +179,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -188,15 +188,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Keep up the great work! Consistency is key.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -253,10 +253,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
+          color: isSelected ? AppColors.primary : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.primary : Theme.of(context).dividerColor,
           ),
         ),
         child: Text(
@@ -264,7 +264,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ),
@@ -312,9 +312,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: [
@@ -324,7 +324,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.medication_rounded,
@@ -337,18 +337,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   children: [
                     Text(
                       med.medicineName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
+                      style: TextStyle(fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       med.dosage,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                      style: TextStyle(fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -416,8 +414,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
                 color: isTaken
-                    ? AppColors.successSurface
-                    : AppColors.warningSurface,
+                    ? AppColors.success.withValues(alpha: 0.1)
+                    : AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
@@ -500,7 +498,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
 
     await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -686,10 +684,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isLow ? AppColors.warning : AppColors.border,
+              color: isLow ? AppColors.warning : Theme.of(context).dividerColor,
               width: isLow ? 2 : 1,
             ),
           ),
@@ -702,10 +700,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   Expanded(
                     child: Text(
                       med.medicineName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
+                      style: TextStyle(fontWeight: FontWeight.w700,
                         fontSize: 16,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -714,7 +711,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: isLow ? AppColors.warningSurface : AppColors.primarySurface,
+                          color: isLow ? AppColors.warning.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -728,7 +725,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       ),
                       const SizedBox(width: 8),
                       IconButton(
-                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                        icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                         onPressed: () {
@@ -760,7 +757,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 children: [
                   Text(
                     'Current Stock: ${med.totalQuantityAvailable} pills',
-                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
                   ),
                   const SizedBox(width: 8),
                   InkWell(
@@ -808,7 +805,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -828,7 +825,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 children: [
                   Text('Refill ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
-                  const Text('Select amount to add:', style: TextStyle(color: AppColors.textSecondary)),
+                  Text('Select amount to add:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 12,
@@ -836,7 +833,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       return ChoiceChip(
                         label: Text('+$amount', style: TextStyle(color: selectedAmount == amount ? Colors.white : AppColors.primary)),
                         selectedColor: AppColors.primary,
-                        backgroundColor: AppColors.primarySurface,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                         selected: selectedAmount == amount,
                         onSelected: (selected) {
                           if (selected) {
@@ -904,7 +901,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -922,7 +919,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             children: [
               Text('Edit Stock: ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              const Text('Enter the exact number of pills you currently have:', style: TextStyle(color: AppColors.textSecondary)),
+              Text('Enter the exact number of pills you currently have:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
               const SizedBox(height: 16),
               TextField(
                 controller: customController,
@@ -1009,7 +1006,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.medical_services_outlined, color: AppColors.primary),
@@ -1028,16 +1025,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       const SizedBox(height: 4),
                       Text(
                         test.labOrClinicName,
-                        style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
+                          Icon(Icons.calendar_today, size: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                           const SizedBox(width: 4),
                           Text(
                             formattedDate,
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12),
                           ),
                         ],
                       ),
@@ -1054,7 +1051,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: daysUntil < 0 ? AppColors.warning.withOpacity(0.1) : AppColors.primary.withOpacity(0.1),
+                            color: daysUntil < 0 ? AppColors.warning.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -1068,7 +1065,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                         ),
                         const SizedBox(width: 8),
                         IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                          icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                           onPressed: () {
@@ -1134,7 +1131,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
