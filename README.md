@@ -25,14 +25,13 @@ This document covers the implementation of **Task 4 (Health Adherence & UI)** an
 ### 4. Pill Inventory & Refill Supply Management
 - **Automatic Tracking**: The app calculates remaining days of supply (`total pills / daily doses`).
 - **Low Stock Alerts**: Visually highlights medicines with ≤ 5 days of supply.
-- **Smart Refill Modal**: Bottom sheet that allows quick-adding standard pharmacy supplies (+10, +30, +60, +90) or typing a custom refill amount.
-- **Exact Stock Correction**: A dedicated pencil edit icon allows users to override and manually type in the absolute exact number of pills they currently hold (to recover from mistaken refills).
-- **Intelligent Refill Push Notification**: Automatically triggers a local notification warning on *any* dose taken that causes supply to drop to ≤ 3 days.
+- **Refill Button**: Contextual "+30 Refill" button instantly updates inventory.
+- **Push Notification**: Automatically triggers a local notification warning when supply drops to ≤ 3 days.
 
 ### 5. Diagnostic Tests & Labs
 - **Tests Tab**: Dedicated tab for tracking upcoming medical tests, labs, and scans.
 - **Smart Countdown**: Calculates days remaining (e.g., "In 3 Days", "Tomorrow", "Today", "Overdue").
-- **State Cleanup**: Marking a test as complete instantly removes it from the queue and cancels its scheduled background alarms.
+- **Celebratory UI**: Marking a test as complete triggers a green confetti success banner.
 
 ### 6. Robust Local Notifications (Task 5)
 - **`flutter_local_notifications` v18**: Integrated with Android core library desugaring for full backwards compatibility.
@@ -40,7 +39,7 @@ This document covers the implementation of **Task 4 (Health Adherence & UI)** an
 - **Cascading Test Reminders**: Tests schedule a reminder 3 days before. If that has already passed, it falls back to 1 day before, then the morning of the test.
 - **Pre-Alerts**: Medication reminders fire exactly 5 minutes *before* the scheduled dose time to give the user time to prepare.
 - **Notification ID Safety**: Generates safe, collision-free integer IDs from object hashes to prevent reminders from overwriting each other.
-- **Automatic Cancellation**: Permanently deletes items (medicines or tests) via safety dialogs, which instantly cancels their active background alarms.
+- **Automatic Cancellation**: Cancels scheduled test notifications immediately if the user marks the test as completed early.
 
 ---
 
@@ -49,7 +48,6 @@ This document covers the implementation of **Task 4 (Health Adherence & UI)** an
 - **State Management**: `RemindersNotifier` (Riverpod) acts as the single source of truth. All UI actions dispatch methods to this provider.
 - **Notification Service**: A Singleton `NotificationService` handles permission requests, initialization, and scheduling logic. Wrapped in fail-safe `try/catch` blocks at app launch to prevent crash-to-desktop scenarios.
 - **UI Context Awareness**: The main Floating Action Button (`+`) checks the active Tab. It opens the "Add Medicine" modal on the Doses tab, and the "Add Test" modal on the Tests tab.
-- **Framework Safety (Unmounted Widgets)**: Implements precise Flutter element unmounting safety. Dialog pops (`Navigator.pop(context)`) and SnackBar messages are strategically ordered *before* synchronous provider state updates to eliminate the notorious `_dependents.isEmpty is not true` core framework crash.
 
 ---
 
