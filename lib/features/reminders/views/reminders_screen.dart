@@ -617,10 +617,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          if (nameController.text.isEmpty || selectedDoses.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter a name and select at least one time.')),
-                            );
+                          if (nameController.text.isEmpty) {
                             return;
                           }
 
@@ -644,12 +641,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                               .read(remindersProvider.notifier)
                               .addMedicineReminder(reminder);
 
-                          // Show snackbar BEFORE popping to avoid using a disposed context
+                          Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                                 content: Text('Reminder schedule saved!')),
                           );
-                          Navigator.pop(context);
                         },
                         child: const Text('Save Reminder'),
                       ),
