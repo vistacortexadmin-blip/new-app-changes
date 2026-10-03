@@ -244,6 +244,34 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
       debugPrint('Failed to cancel completed test notification: $e');
     }
   }
+
+  void deleteMedicine(String medicineId) {
+    final medIndex = state.medicines.indexWhere((m) => m.id == medicineId);
+    if (medIndex != -1) {
+      final med = state.medicines[medIndex];
+      for (int i = 0; i < med.dailySchedules.length; i++) {
+        try {
+          NotificationService().cancelNotification(med.id.hashCode + i);
+        } catch (e) {
+          debugPrint('Failed to cancel medicine notification: $e');
+        }
+      }
+      
+      final updatedMedicines = List<MedicineReminder>.from(state.medicines)..removeAt(medIndex);
+      state = state.copyWith(medicines: updatedMedicines);
+    }
+  }
+
+  void deleteTest(String testId) {
+    try {
+      NotificationService().cancelNotification(testId.hashCode);
+    } catch (e) {
+      debugPrint('Failed to cancel test notification: $e');
+    }
+
+    final updatedTests = state.nextTests.where((t) => t.id != testId).toList();
+    state = state.copyWith(nextTests: updatedTests);
+  }
 }
 
 final remindersProvider =

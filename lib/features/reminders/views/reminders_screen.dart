@@ -709,24 +709,49 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isLow
-                          ? AppColors.warningSurface
-                          : AppColors.primarySurface,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$daysLeft Days Left',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color:
-                            isLow ? AppColors.warning : AppColors.primary,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isLow ? AppColors.warningSurface : AppColors.primarySurface,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$daysLeft Days Left',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isLow ? AppColors.warning : AppColors.primary,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Medicine?'),
+                              content: Text('Are you sure you want to permanently delete ${med.medicineName}? All its scheduled alarms will be cancelled.'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                TextButton(
+                                  onPressed: () {
+                                    ref.read(remindersProvider.notifier).deleteMedicine(med.id);
+                                    Navigator.pop(context);
+                                  }, 
+                                  child: const Text('Delete', style: TextStyle(color: Colors.red))
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -947,20 +972,49 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: daysUntil < 0 ? AppColors.warning.withOpacity(0.1) : AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        daysUntilStr,
-                        style: TextStyle(
-                          color: daysUntil < 0 ? AppColors.warning : AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: daysUntil < 0 ? AppColors.warning.withOpacity(0.1) : AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            daysUntilStr,
+                            style: TextStyle(
+                              color: daysUntil < 0 ? AppColors.warning : AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, size: 20, color: Colors.grey),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Delete Test?'),
+                                content: Text('Are you sure you want to permanently delete the test "${test.testName}"?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                  TextButton(
+                                    onPressed: () {
+                                      ref.read(remindersProvider.notifier).deleteTest(test.id);
+                                      Navigator.pop(context);
+                                    }, 
+                                    child: const Text('Delete', style: TextStyle(color: Colors.red))
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
                     InkWell(
