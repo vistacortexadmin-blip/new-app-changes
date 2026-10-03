@@ -92,11 +92,21 @@ class NotificationService {
     if (!isPM && hour == 12) hour = 0;
 
     final now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime scheduledDate =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute)
-            .subtract(const Duration(minutes: 5)); // 5 minutes before
+    tz.TZDateTime doseTime =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+        
+    // If dose time today has already passed, schedule for tomorrow
+    if (doseTime.isBefore(now)) {
+      doseTime = doseTime.add(const Duration(days: 1));
+    }
+    
+    // Now subtract 5 minutes for the pre-alert
+    tz.TZDateTime scheduledDate = doseTime.subtract(const Duration(minutes: 5));
+    
+    // If 5 mins before is already in the past (e.g., they just scheduled it for a few minutes from now),
+    // fire a few seconds from now instead
     if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+      scheduledDate = now.add(const Duration(seconds: 5));
     }
 
     const AndroidNotificationDetails androidDetails =
@@ -128,16 +138,45 @@ class NotificationService {
     required String labName,
     required DateTime date,
   }) async {
-    // Schedule 3 days before the test at 8:00 AM
-    final scheduledDate = tz.TZDateTime.from(
-      DateTime(date.year, date.month, date.day, 8, 0)
-          .subtract(const Duration(days: 3)),
+    final now = tz.TZDateTime.now(tz.local);
+    final testDay8am = tz.TZDateTime.from(
+      DateTime(date.year, date.month, date.day, 8, 0),
       tz.local,
     );
-    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
 
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
+    // If test date is already past, skip
+    if (testDay8am.isBefore(now) && 
+        DateTime(date.year, date.month, date.day).isBefore(DateTime(now.year, now.month, now.day))) {
+      return;
+    }
+
+    // Try 3 days before at 8 AM
+    tz.TZDateTime scheduledDate = testDay8am.subtract(const Duration(days: 3));
+    String titleText = 'Upcoming Test in 3 Days';
+    String bodyText = 'Your $testName at $labName is in 3 days. Get prepared!';
+
+    // If 3 days before is already past, try 1 day before
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = testDay8am.subtract(const Duration(days: 1));
+      titleText = 'Upcoming Test Tomorrow';
+      bodyText = 'Your $testName at $labName is tomorrow. Stay prepared!';
+    }
+
+    // If 1 day before is also past, try morning of test day
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = testDay8am;
+      titleText = 'Test Today';
+      bodyText = 'You have $testName at $labName today. Good luck!';
+    }
+
+    // If even the morning of test day has passed, fire in 5 seconds
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = now.add(const Duration(seconds: 5));
+      titleText = 'Test Today';
+      bodyText = 'Reminder: You have $testName at $labName today!';
+    }
+
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'test_channel_id',
       'Diagnostic Tests',
       channelDescription: 'Reminders for upcoming diagnostic tests',
@@ -147,8 +186,8 @@ class NotificationService {
 
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
-      'Upcoming Test Today',
-      'You have a $testName at $labName today. Stay prepared!',
+      titleText,
+      bodyText,
       scheduledDate,
       const NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,

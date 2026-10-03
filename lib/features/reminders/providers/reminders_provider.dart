@@ -188,13 +188,17 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     // Schedule notification for each daily schedule
     for (int i = 0; i < reminder.dailySchedules.length; i++) {
       final schedule = reminder.dailySchedules[i];
-      NotificationService().scheduleDailyMedicineReminder(
-        id: reminder.id.hashCode + i, // Unique int ID for local notifications
-        medicineName: reminder.medicineName,
-        dosage: reminder.dosage,
-        timeOfDay: schedule.timeOfDay,
-        timeString: schedule.timeString,
-      );
+      try {
+        NotificationService().scheduleDailyMedicineReminder(
+          id: reminder.id.hashCode + i, // Unique int ID for local notifications
+          medicineName: reminder.medicineName,
+          dosage: reminder.dosage,
+          timeOfDay: schedule.timeOfDay,
+          timeString: schedule.timeString,
+        );
+      } catch (e) {
+        debugPrint('Failed to schedule medicine reminder: $e');
+      }
     }
   }
 
@@ -202,12 +206,16 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
   void addNextTestReminder(NextTestReminder reminder) {
     state = state.copyWith(nextTests: [reminder, ...state.nextTests]);
     
-    NotificationService().scheduleTestReminder(
-      id: reminder.id.hashCode,
-      testName: reminder.testName,
-      labName: reminder.labOrClinicName,
-      date: reminder.scheduledDate,
-    );
+    try {
+      NotificationService().scheduleTestReminder(
+        id: reminder.id.hashCode,
+        testName: reminder.testName,
+        labName: reminder.labOrClinicName,
+        date: reminder.scheduledDate,
+      );
+    } catch (e) {
+      debugPrint('Failed to schedule test reminder: $e');
+    }
   }
 
   void markNextTestCompleted(String id) {
@@ -227,6 +235,12 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     }).toList();
 
     state = state.copyWith(nextTests: updatedTests);
+    
+    try {
+      NotificationService().cancelNotification(id.hashCode);
+    } catch (e) {
+      debugPrint('Failed to cancel completed test notification: $e');
+    }
   }
 }
 
