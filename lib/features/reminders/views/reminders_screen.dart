@@ -493,9 +493,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     final nameController = TextEditingController();
     final dosageController = TextEditingController();
     final supplyController = TextEditingController();
-    DoseTimeOfDay selectedTime = DoseTimeOfDay.morning;
+    Map<DoseTimeOfDay, TimeOfDay> selectedDoses = {
+      DoseTimeOfDay.morning: const TimeOfDay(hour: 8, minute: 0)
+    };
     DateTime selectedDate = DateTime.now();
-    TimeOfDay exactTime = const TimeOfDay(hour: 8, minute: 0);
 
     await showModalBottomSheet(
       context: context,
@@ -559,36 +560,57 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       },
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<DoseTimeOfDay>(
-                      value: selectedTime,
-                      decoration:
-                          const InputDecoration(labelText: 'Time of Day'),
-                      items: DoseTimeOfDay.values.map((time) {
-                        return DropdownMenuItem(
-                          value: time,
-                          child: Text(time.toString().split('.').last),
+                    const Text('Times of Day', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: DoseTimeOfDay.values.map((time) {
+                        final isSelected = selectedDoses.containsKey(time);
+                        return FilterChip(
+                          label: Text(time.name),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setModalState(() {
+                              if (selected) {
+                                if (time == DoseTimeOfDay.morning) {
+                                  selectedDoses[time] = const TimeOfDay(hour: 8, minute: 0);
+                                } else if (time == DoseTimeOfDay.afternoon) {
+                                  selectedDoses[time] = const TimeOfDay(hour: 13, minute: 0);
+                                } else if (time == DoseTimeOfDay.evening) {
+                                  selectedDoses[time] = const TimeOfDay(hour: 20, minute: 0);
+                                } else {
+                                  selectedDoses[time] = const TimeOfDay(hour: 22, minute: 0);
+                                }
+                              } else {
+                                if (selectedDoses.length > 1) {
+                                  selectedDoses.remove(time);
+                                }
+                              }
+                            });
+                          },
                         );
                       }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setModalState(() => selectedTime = val);
-                        }
-                      },
                     ),
-                    const SizedBox(height: 12),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Exact Time: ${exactTime.format(context)}'),
-                      trailing: const Icon(Icons.access_time),
-                      onTap: () async {
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: exactTime,
+                    const SizedBox(height: 8),
+                    Column(
+                      children: selectedDoses.keys.map((time) {
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('${time.name} Time: ${selectedDoses[time]!.format(context)}'),
+                          trailing: const Icon(Icons.access_time),
+                          onTap: () async {
+                            final pickedTime = await showTimePicker(
+                              context: context,
+                              initialTime: selectedDoses[time]!,
+                            );
+                            if (pickedTime != null) {
+                              setModalState(() {
+                                selectedDoses[time] = pickedTime;
+                              });
+                            }
+                          },
                         );
-                        if (time != null) {
-                          setModalState(() => exactTime = time);
-                        }
-                      },
+                      }).toList(),
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
@@ -605,14 +627,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                             dosage: dosageController.text,
                             instructions: '',
                             prescribedFor: '',
-                            dailySchedules: [
-                              DoseSchedule(
-                                timeOfDay: selectedTime,
-                                timeString: exactTime.format(context),
-                              )
-                            ],
+                            dailySchedules: selectedDoses.entries.map((e) => DoseSchedule(
+                              timeOfDay: e.key,
+                              timeString: e.value.format(context),
+                            )).toList(),
                             totalQuantityAvailable: int.tryParse(supplyController.text) ?? 30,
-                            dailyDoseCount: 1,
+                            dailyDoseCount: selectedDoses.length,
                             startDate: selectedDate,
                             durationDays: 30,
                           );
