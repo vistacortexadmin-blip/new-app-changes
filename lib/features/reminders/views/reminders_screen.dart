@@ -741,8 +741,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                                 TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                                 TextButton(
                                   onPressed: () {
-                                    ref.read(remindersProvider.notifier).deleteMedicine(med.id);
                                     Navigator.pop(context);
+                                    ref.read(remindersProvider.notifier).deleteMedicine(med.id);
                                   }, 
                                   child: const Text('Delete', style: TextStyle(color: Colors.red))
                                 ),
@@ -1081,8 +1081,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                                   TextButton(
                                     onPressed: () {
-                                      ref.read(remindersProvider.notifier).deleteTest(test.id);
                                       Navigator.pop(context);
+                                      ref.read(remindersProvider.notifier).deleteTest(test.id);
                                     }, 
                                     child: const Text('Delete', style: TextStyle(color: Colors.red))
                                   ),
@@ -1097,9 +1097,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     InkWell(
                       onTap: () {
                         ref.read(remindersProvider.notifier).markNextTestCompleted(test.id);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Test marked as completed! 🎉')),
-                        );
                       },
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
