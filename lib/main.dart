@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
-<<<<<<< HEAD
 import 'core/services/notification_service.dart';
-=======
 import 'firebase_options.dart';
->>>>>>> main
 import 'app.dart';
 
 void main() async {
@@ -19,9 +16,13 @@ void main() async {
   }
 
   // Initialize and request notification permissions
-  final notificationService = NotificationService();
-  await notificationService.initialize();
-  await notificationService.requestPermissions();
+  try {
+    final notificationService = NotificationService();
+    await notificationService.initialize();
+    await notificationService.requestPermissions();
+  } catch (e) {
+    debugPrint('Notification initialization notice: $e');
+  }
 
   runApp(
     const ProviderScope(
@@ -29,4 +30,3 @@ void main() async {
     ),
   );
 }
-
