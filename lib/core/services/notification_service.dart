@@ -85,8 +85,14 @@ class NotificationService {
     if (parts.length != 2) return;
     final timeParts = parts[0].split(':');
     if (timeParts.length != 2) return;
-    int hour = int.parse(timeParts[0]);
-    int minute = int.parse(timeParts[1]);
+    int hour;
+    int minute;
+    try {
+      hour = int.parse(timeParts[0]);
+      minute = int.parse(timeParts[1]);
+    } catch (_) {
+      return; // Invalid time format
+    }
     final isPM = parts[1].toUpperCase() == 'PM';
     if (isPM && hour < 12) hour += 12;
     if (!isPM && hour == 12) hour = 0;
@@ -94,16 +100,25 @@ class NotificationService {
     final now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime doseTime =
         tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+<<<<<<< Updated upstream
         
+=======
+>>>>>>> Stashed changes
     // If dose time today has already passed, schedule for tomorrow
     if (doseTime.isBefore(now)) {
       doseTime = doseTime.add(const Duration(days: 1));
     }
+<<<<<<< Updated upstream
     
     // Now subtract 5 minutes for the pre-alert
     tz.TZDateTime scheduledDate = doseTime.subtract(const Duration(minutes: 5));
     
     // If 5 mins before is already in the past (e.g., they just scheduled it for a few minutes from now),
+=======
+    // Now subtract 5 minutes for the pre-alert
+    tz.TZDateTime scheduledDate = doseTime.subtract(const Duration(minutes: 5));
+    // If 5 mins before is already in the past (dose is in < 5 minutes),
+>>>>>>> Stashed changes
     // fire a few seconds from now instead
     if (scheduledDate.isBefore(now)) {
       scheduledDate = now.add(const Duration(seconds: 5));
@@ -143,6 +158,41 @@ class NotificationService {
       DateTime(date.year, date.month, date.day, 8, 0),
       tz.local,
     );
+<<<<<<< Updated upstream
+=======
+
+    // If test date is already past, skip
+    if (testDay8am.isBefore(now) && 
+        DateTime(date.year, date.month, date.day).isBefore(DateTime(now.year, now.month, now.day))) {
+      return;
+    }
+
+    // Try 3 days before at 8 AM
+    tz.TZDateTime scheduledDate = testDay8am.subtract(const Duration(days: 3));
+    String titleText = 'Upcoming Test in 3 Days';
+    String bodyText = 'Your $testName at $labName is in 3 days. Get prepared!';
+
+    // If 3 days before is already past, try 1 day before
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = testDay8am.subtract(const Duration(days: 1));
+      titleText = 'Upcoming Test Tomorrow';
+      bodyText = 'Your $testName at $labName is tomorrow. Stay prepared!';
+    }
+
+    // If 1 day before is also past, try morning of test day
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = testDay8am;
+      titleText = 'Test Today';
+      bodyText = 'You have $testName at $labName today. Good luck!';
+    }
+
+    // If even the morning of test day has passed, fire in 5 seconds
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = now.add(const Duration(seconds: 5));
+      titleText = 'Test Today';
+      bodyText = 'Reminder: You have $testName at $labName today!';
+    }
+>>>>>>> Stashed changes
 
     // If test date is already past, skip
     if (testDay8am.isBefore(now) && 
@@ -218,7 +268,7 @@ class NotificationService {
     );
   }
 
-  void cancelNotification(int id) {
-    flutterLocalNotificationsPlugin.cancel(id);
+  Future<void> cancelNotification(int id) async {
+    await flutterLocalNotificationsPlugin.cancel(id);
   }
 }

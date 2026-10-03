@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import '../models/reminder_model.dart';
@@ -74,10 +75,17 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
   }) {
     final updatedMedicines = state.medicines.map((med) {
       if (med.id == medicineId) {
+<<<<<<< Updated upstream
         bool wasPending = false;
         final updatedSchedules = med.dailySchedules.map((schedule) {
           if (schedule.timeOfDay == timeOfDay && schedule.status == AdherenceStatus.pending) {
             wasPending = true;
+=======
+        bool changed = false;
+        final updatedSchedules = med.dailySchedules.map((schedule) {
+          if (schedule.timeOfDay == timeOfDay && schedule.status == AdherenceStatus.pending) {
+            changed = true;
+>>>>>>> Stashed changes
             return schedule.copyWith(
               status: AdherenceStatus.taken,
               loggedAt: DateTime.now(),
@@ -86,6 +94,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
           return schedule;
         }).toList();
 
+<<<<<<< Updated upstream
         if (wasPending) {
           final newQuantity = (med.totalQuantityAvailable - 1).clamp(0, 9999);
           final updatedMed = med.copyWith(
@@ -101,12 +110,32 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
             );
           }
           return updatedMed;
+=======
+        if (changed) {
+          // Decrement 1 pill from quantity count
+          final newQuantity = (med.totalQuantityAvailable - 1).clamp(0, 999);
+          return med.copyWith(
+            dailySchedules: updatedSchedules,
+            totalQuantityAvailable: newQuantity,
+          );
+>>>>>>> Stashed changes
         }
       }
       return med;
     }).toList();
 
     state = state.copyWith(medicines: updatedMedicines);
+
+    // Check for low stock warnings after taking doses for the specific medicine
+    for (final med in state.lowSupplyMedicines) {
+      if (med.id == medicineId && med.daysOfSupplyRemaining <= 3 && med.daysOfSupplyRemaining > 0) {
+        NotificationService().showRefillWarning(
+          id: med.id.hashCode,
+          medicineName: med.medicineName,
+          daysLeft: med.daysOfSupplyRemaining,
+        );
+      }
+    }
   }
 
   void markAllDosesTaken(DoseTimeOfDay timeOfDay) {
@@ -147,6 +176,20 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     }).toList();
 
     state = state.copyWith(medicines: updatedMeds);
+<<<<<<< Updated upstream
+=======
+
+    // Check for low stock warnings after taking doses
+    for (final med in state.lowSupplyMedicines) {
+      if (med.daysOfSupplyRemaining <= 3 && med.daysOfSupplyRemaining > 0) {
+        NotificationService().showRefillWarning(
+          id: med.id.hashCode,
+          medicineName: med.medicineName,
+          daysLeft: med.daysOfSupplyRemaining,
+        );
+      }
+    }
+>>>>>>> Stashed changes
   }
 
   void markDoseSkipped({
@@ -224,7 +267,11 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
           timeString: schedule.timeString,
         );
       } catch (e) {
+<<<<<<< Updated upstream
         debugPrint('Failed to schedule medicine reminder: $e');
+=======
+        debugPrint('Error scheduling daily medicine reminder: $e');
+>>>>>>> Stashed changes
       }
     }
   
@@ -242,7 +289,11 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
         date: reminder.scheduledDate,
       );
     } catch (e) {
+<<<<<<< Updated upstream
       debugPrint('Failed to schedule test reminder: $e');
+=======
+      debugPrint('Error scheduling test reminder: $e');
+>>>>>>> Stashed changes
     }
   }
 
@@ -267,6 +318,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     try {
       NotificationService().cancelNotification(id.hashCode);
     } catch (e) {
+<<<<<<< Updated upstream
       debugPrint('Failed to cancel completed test notification: $e');
     }
   }
@@ -297,6 +349,10 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
 
     final updatedTests = state.nextTests.where((t) => t.id != testId).toList();
     state = state.copyWith(nextTests: updatedTests);
+=======
+      debugPrint('Error canceling test reminder: $e');
+    }
+>>>>>>> Stashed changes
   }
 }
 
