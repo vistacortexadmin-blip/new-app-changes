@@ -468,13 +468,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                ref.read(remindersProvider.notifier).markDoseSkipped(
-                      medicineId: medId,
-                      timeOfDay: timeOfDay,
-                      reason: controller.text.isNotEmpty
-                          ? controller.text
-                          : 'Patient elected to skip',
-                    );
+                Future.microtask(() {
+                  ref.read(remindersProvider.notifier).markDoseSkipped(
+                        medicineId: medId,
+                        timeOfDay: timeOfDay,
+                        reason: controller.text.isNotEmpty
+                            ? controller.text
+                            : 'Patient elected to skip',
+                      );
+                });
               },
               child: const Text('Submit'),
             ),
@@ -640,9 +642,11 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                             Navigator.of(context).pop();
                           }
 
-                          ref
-                              .read(remindersProvider.notifier)
-                              .addMedicineReminder(reminder);
+                          Future.microtask(() {
+                            ref
+                                .read(remindersProvider.notifier)
+                                .addMedicineReminder(reminder);
+                          });
                         },
                         child: const Text('Save Reminder'),
                       ),
@@ -740,7 +744,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                                 TextButton(
                                   onPressed: () {
                                     Navigator.pop(context);
-                                    ref.read(remindersProvider.notifier).deleteMedicine(med.id);
+                                    Future.microtask(() {
+                                      ref.read(remindersProvider.notifier).deleteMedicine(med.id);
+                                    });
                                   }, 
                                   child: const Text('Delete', style: TextStyle(color: Colors.red))
                                 ),
@@ -875,10 +881,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                         if (Navigator.of(context).canPop()) {
                           Navigator.of(context).pop();
                         }
-                        ref.read(remindersProvider.notifier).refillStock(
-                          medicineId: med.id,
-                          addedQuantity: selectedAmount,
-                        );
+                        Future.microtask(() {
+                          ref.read(remindersProvider.notifier).refillStock(
+                            medicineId: med.id,
+                            addedQuantity: selectedAmount,
+                          );
+                        });
                       },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -940,10 +948,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     if (Navigator.of(context).canPop()) {
                       Navigator.of(context).pop();
                     }
-                    ref.read(remindersProvider.notifier).updateStock(
-                      medicineId: med.id,
-                      exactQuantity: exactAmount,
-                    );
+                    Future.microtask(() {
+                      ref.read(remindersProvider.notifier).updateStock(
+                        medicineId: med.id,
+                        exactQuantity: exactAmount,
+                      );
+                    });
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1080,7 +1090,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                                   TextButton(
                                     onPressed: () {
                                       Navigator.pop(context);
-                                      ref.read(remindersProvider.notifier).deleteTest(test.id);
+                                      Future.microtask(() {
+                                        ref.read(remindersProvider.notifier).deleteTest(test.id);
+                                      });
                                     }, 
                                     child: const Text('Delete', style: TextStyle(color: Colors.red))
                                   ),
@@ -1222,7 +1234,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           if (Navigator.of(context).canPop()) {
                             Navigator.of(context).pop();
                           }
-                          ref.read(remindersProvider.notifier).addNextTestReminder(newTest);
+                          Future.microtask(() {
+                            ref.read(remindersProvider.notifier).addNextTestReminder(newTest);
+                          });
                         },
                         child: const Text('Save Test'),
                       ),
