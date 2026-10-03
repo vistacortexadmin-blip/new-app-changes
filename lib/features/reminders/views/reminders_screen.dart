@@ -159,6 +159,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     CircularProgressIndicator(
                       value: adherence,
                       strokeWidth: 6,
+                      strokeCap: StrokeCap.round,
                       backgroundColor: Theme.of(context).dividerColor,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         adherence >= 0.8
