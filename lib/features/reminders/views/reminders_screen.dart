@@ -756,10 +756,24 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                'Current Stock: ${med.totalQuantityAvailable} pills',
-                style: const TextStyle(
-                    fontSize: 13, color: AppColors.textSecondary),
+              Row(
+                children: [
+                  Text(
+                    'Current Stock: ${med.totalQuantityAvailable} pills',
+                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                      _showEditStockModal(context, med);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.edit, size: 16, color: AppColors.primary),
+                    ),
+                  ),
+                ],
               ),
               if (isLow) ...[
                 const SizedBox(height: 12),
@@ -879,6 +893,69 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
               ),
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showEditStockModal(BuildContext context, MedicineReminder med) {
+    final customController = TextEditingController(text: med.totalQuantityAvailable.toString());
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Edit Stock: ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              const Text('Enter the exact number of pills you currently have:', style: TextStyle(color: AppColors.textSecondary)),
+              const SizedBox(height: 16),
+              TextField(
+                controller: customController,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Current Total Pills',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final exactAmount = int.tryParse(customController.text) ?? med.totalQuantityAvailable;
+                    ref.read(remindersProvider.notifier).updateStock(
+                      medicineId: med.id,
+                      exactQuantity: exactAmount,
+                    );
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Save Stock', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );

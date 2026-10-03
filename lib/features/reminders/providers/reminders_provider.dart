@@ -172,7 +172,23 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     final updatedMedicines = state.medicines.map((med) {
       if (med.id == medicineId) {
         return med.copyWith(
-          totalQuantityAvailable: med.totalQuantityAvailable + addedQuantity,
+          totalQuantityAvailable: (med.totalQuantityAvailable + addedQuantity).clamp(0, 9999),
+        );
+      }
+      return med;
+    }).toList();
+
+    state = state.copyWith(medicines: updatedMedicines);
+  }
+
+  void updateStock({
+    required String medicineId,
+    required int exactQuantity,
+  }) {
+    final updatedMedicines = state.medicines.map((med) {
+      if (med.id == medicineId) {
+        return med.copyWith(
+          totalQuantityAvailable: exactQuantity.clamp(0, 9999),
         );
       }
       return med;
