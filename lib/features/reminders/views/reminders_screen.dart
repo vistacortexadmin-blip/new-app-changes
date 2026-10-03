@@ -489,13 +489,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   // Add Medicine Modal
   // ──────────────────────────────────────────────────────────────────────────
 
-  void _showAddMedicineModal(BuildContext context) {
+  void _showAddMedicineModal(BuildContext context) async {
     final nameController = TextEditingController();
     final dosageController = TextEditingController();
-    final timeController = TextEditingController();
+    final supplyController = TextEditingController();
     DoseTimeOfDay selectedTime = DoseTimeOfDay.morning;
+    DateTime selectedDate = DateTime.now();
+    TimeOfDay exactTime = const TimeOfDay(hour: 8, minute: 0);
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
       isScrollControlled: true,
@@ -512,96 +514,134 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 top: 24,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Add Medicine',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Medicine Name'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: dosageController,
-                    decoration: const InputDecoration(
-                        labelText: 'Dosage (e.g., 500mg)'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: timeController,
-                    decoration: const InputDecoration(
-                        labelText: 'Time (e.g. 08:00 AM)'),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<DoseTimeOfDay>(
-                    initialValue: selectedTime,
-                    decoration:
-                        const InputDecoration(labelText: 'Time of Day'),
-                    items: DoseTimeOfDay.values.map((time) {
-                      return DropdownMenuItem(
-                        value: time,
-                        child: Text(time.toString().split('.').last),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setModalState(() => selectedTime = val);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (nameController.text.isEmpty ||
-                            timeController.text.isEmpty) {
-                          return;
-                        }
-
-                        final reminder = MedicineReminder(
-                          id: const Uuid().v4(),
-                          medicineName: nameController.text,
-                          dosage: dosageController.text,
-                          instructions: '',
-                          prescribedFor: '',
-                          dailySchedules: [
-                            DoseSchedule(
-                              timeOfDay: selectedTime,
-                              timeString: timeController.text,
-                            )
-                          ],
-                          totalQuantityAvailable: 30,
-                          dailyDoseCount: 1,
-                          startDate: DateTime.now(),
-                          durationDays: 30,
-                        );
-
-                        ref
-                            .read(remindersProvider.notifier)
-                            .addMedicineReminder(reminder);
-
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Reminder schedule saved!')),
-                        );
-                      },
-                      child: const Text('Save Reminder'),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Add Medicine',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      decoration:
+                          const InputDecoration(labelText: 'Medicine Name'),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: dosageController,
+                      decoration: const InputDecoration(
+                          labelText: 'Dosage (e.g., 500mg)'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: supplyController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                          labelText: 'Total Supply/Pills (e.g., 30)'),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Start Date: ${selectedDate.toLocal().toString().split(' ')[0]}'),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (date != null) {
+                          setModalState(() => selectedDate = date);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<DoseTimeOfDay>(
+                      value: selectedTime,
+                      decoration:
+                          const InputDecoration(labelText: 'Time of Day'),
+                      items: DoseTimeOfDay.values.map((time) {
+                        return DropdownMenuItem(
+                          value: time,
+                          child: Text(time.toString().split('.').last),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setModalState(() => selectedTime = val);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Exact Time: ${exactTime.format(context)}'),
+                      trailing: const Icon(Icons.access_time),
+                      onTap: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: exactTime,
+                        );
+                        if (time != null) {
+                          setModalState(() => exactTime = time);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (nameController.text.isEmpty) {
+                            return;
+                          }
+
+                          final reminder = MedicineReminder(
+                            id: const Uuid().v4(),
+                            medicineName: nameController.text,
+                            dosage: dosageController.text,
+                            instructions: '',
+                            prescribedFor: '',
+                            dailySchedules: [
+                              DoseSchedule(
+                                timeOfDay: selectedTime,
+                                timeString: exactTime.format(context),
+                              )
+                            ],
+                            totalQuantityAvailable: int.tryParse(supplyController.text) ?? 30,
+                            dailyDoseCount: 1,
+                            startDate: selectedDate,
+                            durationDays: 30,
+                          );
+
+                          ref
+                              .read(remindersProvider.notifier)
+                              .addMedicineReminder(reminder);
+
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content: Text('Reminder schedule saved!')),
+                          );
+                        },
+                        child: const Text('Save Reminder'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
         );
       },
     );
+
+    nameController.dispose();
+    dosageController.dispose();
+    supplyController.dispose();
   }
 
   // ──────────────────────────────────────────────────────────────────────────
