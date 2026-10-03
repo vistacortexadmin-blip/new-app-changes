@@ -38,3 +38,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/local.properties
+
+# Documents, PRDs, Markdown, and PDFs
+*.md
+*.pdf
+*PRD*
+*prd*
+
