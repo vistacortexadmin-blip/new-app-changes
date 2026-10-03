@@ -74,8 +74,10 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
   }) {
     final updatedMedicines = state.medicines.map((med) {
       if (med.id == medicineId) {
+        bool wasPending = false;
         final updatedSchedules = med.dailySchedules.map((schedule) {
-          if (schedule.timeOfDay == timeOfDay) {
+          if (schedule.timeOfDay == timeOfDay && schedule.status == AdherenceStatus.pending) {
+            wasPending = true;
             return schedule.copyWith(
               status: AdherenceStatus.taken,
               loggedAt: DateTime.now(),
@@ -84,12 +86,22 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
           return schedule;
         }).toList();
 
-        // Decrement 1 pill from quantity count
-        final newQuantity = (med.totalQuantityAvailable - 1).clamp(0, 999);
-        return med.copyWith(
-          dailySchedules: updatedSchedules,
-          totalQuantityAvailable: newQuantity,
-        );
+        if (wasPending) {
+          final newQuantity = (med.totalQuantityAvailable - 1).clamp(0, 9999);
+          final updatedMed = med.copyWith(
+            dailySchedules: updatedSchedules,
+            totalQuantityAvailable: newQuantity,
+          );
+          
+          if (updatedMed.daysOfSupplyRemaining <= 3 && updatedMed.daysOfSupplyRemaining > 0) {
+            NotificationService().showRefillWarning(
+              id: updatedMed.id.hashCode,
+              medicineName: updatedMed.medicineName,
+              daysLeft: updatedMed.daysOfSupplyRemaining,
+            );
+          }
+          return updatedMed;
+        }
       }
       return med;
     }).toList();
@@ -116,27 +128,25 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
       }).toList();
 
       if (changed) {
-        return med.copyWith(
+        final updatedMed = med.copyWith(
           dailySchedules: newSchedules,
           totalQuantityAvailable:
               (med.totalQuantityAvailable - pillsTaken).clamp(0, 9999),
         );
+        
+        if (updatedMed.daysOfSupplyRemaining <= 3 && updatedMed.daysOfSupplyRemaining > 0) {
+          NotificationService().showRefillWarning(
+            id: updatedMed.id.hashCode,
+            medicineName: updatedMed.medicineName,
+            daysLeft: updatedMed.daysOfSupplyRemaining,
+          );
+        }
+        return updatedMed;
       }
       return med;
     }).toList();
 
     state = state.copyWith(medicines: updatedMeds);
-
-    // Check for low stock warnings after taking doses
-    for (final med in state.lowSupplyMedicines) {
-      if (med.daysOfSupplyRemaining == 3) { // Exactly 3 days left
-        NotificationService().showRefillWarning(
-          id: med.id.hashCode,
-          medicineName: med.medicineName,
-          daysLeft: med.daysOfSupplyRemaining,
-        );
-      }
-    }
   }
 
   void markDoseSkipped({
