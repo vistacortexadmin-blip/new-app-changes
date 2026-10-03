@@ -659,10 +659,6 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
         );
       },
     );
-
-    nameController.dispose();
-    dosageController.dispose();
-    supplyController.dispose();
   }
 
   // ──────────────────────────────────────────────────────────────────────────
