@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_colors.dart';
+import '../widgets/reminder_popup.dart'; // ⏰ Imported the custom local popup widget
 
 class RemindersScreen extends ConsumerStatefulWidget {
   const RemindersScreen({super.key});
@@ -19,7 +20,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+    final textSecondary =
+        isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
     final borderColor = isDark ? const Color(0xFF334155) : AppColors.border;
 
     return Scaffold(
@@ -72,8 +74,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.add, color: Colors.white, size: 24),
-                      onPressed: () => _showAddReminderDialog(context),
+                      icon:
+                          const Icon(Icons.add, color: Colors.white, size: 24),
+                      onPressed: () => showReminderPopup(
+                        context,
+                        initialType: 'CUSTOM',
+                        initialTitle: 'New Health Target',
+                        initialItemId: 'custom_new_id',
+                      ),
                     ),
                   ),
                 ],
@@ -87,13 +95,17 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  _buildFilterChip('All', isDark, cardBg, borderColor, textSecondary),
+                  _buildFilterChip(
+                      'All', isDark, cardBg, borderColor, textSecondary),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Medicines', isDark, cardBg, borderColor, textSecondary),
+                  _buildFilterChip(
+                      'Medicines', isDark, cardBg, borderColor, textSecondary),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Tests', isDark, cardBg, borderColor, textSecondary),
+                  _buildFilterChip(
+                      'Tests', isDark, cardBg, borderColor, textSecondary),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Follow-ups', isDark, cardBg, borderColor, textSecondary),
+                  _buildFilterChip(
+                      'Follow-ups', isDark, cardBg, borderColor, textSecondary),
                 ],
               ),
             ),
@@ -102,7 +114,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             // 3. Reminders List
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
                 children: [
                   // Item 1: Metformin with Switch
                   _buildSwitchReminderCard(
@@ -111,7 +124,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     timeString: '8:00 AM',
                     icon: Icons.medication_rounded,
                     iconColor: const Color(0xFFEC4899),
-                    iconBgColor: isDark ? const Color(0xFF50123C) : const Color(0xFFFDF2F8),
+                    iconBgColor: isDark
+                        ? const Color(0xFF50123C)
+                        : const Color(0xFFFDF2F8),
                     isActive: _metforminActive,
                     cardBg: cardBg,
                     textColor: textColor,
@@ -132,7 +147,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     timeString: '1:00 PM',
                     icon: Icons.medication_liquid_rounded,
                     iconColor: const Color(0xFFF97316),
-                    iconBgColor: isDark ? const Color(0xFF43281C) : const Color(0xFFFFF7ED),
+                    iconBgColor: isDark
+                        ? const Color(0xFF43281C)
+                        : const Color(0xFFFFF7ED),
                     isActive: _vitaminDActive,
                     cardBg: cardBg,
                     textColor: textColor,
@@ -153,7 +170,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     timeString: '15 Sep 2025',
                     icon: Icons.calendar_month_rounded,
                     iconColor: const Color(0xFF2563EB),
-                    iconBgColor: isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF),
+                    iconBgColor: isDark
+                        ? const Color(0xFF1E3A5F)
+                        : const Color(0xFFEFF6FF),
                     actionIcon: Icons.calendar_today_outlined,
                     cardBg: cardBg,
                     textColor: textColor,
@@ -162,7 +181,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     isDark: isDark,
                     onAction: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Follow-up test confirmed on calendar.')),
+                        const SnackBar(
+                            content:
+                                Text('Follow-up test confirmed on calendar.')),
                       );
                     },
                   ),
@@ -174,7 +195,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     timeString: '20 Sep 2025',
                     icon: Icons.person_search_rounded,
                     iconColor: const Color(0xFF0D9488),
-                    iconBgColor: isDark ? const Color(0xFF134E4A) : const Color(0xFFF0FDFA),
+                    iconBgColor: isDark
+                        ? const Color(0xFF134E4A)
+                        : const Color(0xFFF0FDFA),
                     actionIcon: Icons.notifications_active_outlined,
                     cardBg: cardBg,
                     textColor: textColor,
@@ -183,7 +206,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                     isDark: isDark,
                     onAction: () {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Doctor visit alert is enabled.')),
+                        const SnackBar(
+                            content: Text('Doctor visit alert is enabled.')),
                       );
                     },
                   ),
@@ -193,10 +217,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF2E1065) : const Color(0xFFF5F3FF),
+                      color: isDark
+                          ? const Color(0xFF2E1065)
+                          : const Color(0xFFF5F3FF),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isDark ? const Color(0xFF7C3AED).withValues(alpha: 0.4) : const Color(0xFFDDD6FE),
+                        color: isDark
+                            ? const Color(0xFF7C3AED).withValues(alpha: 0.4)
+                            : const Color(0xFFDDD6FE),
                       ),
                     ),
                     child: Row(
@@ -207,7 +235,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           style: TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w800,
-                            color: isDark ? const Color(0xFFDDD6FE) : const Color(0xFF5B21B6),
+                            color: isDark
+                                ? const Color(0xFFDDD6FE)
+                                : const Color(0xFF5B21B6),
                             height: 1.3,
                           ),
                         ),
@@ -215,7 +245,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF4C1D95) : Colors.white,
+                            color:
+                                isDark ? const Color(0xFF4C1D95) : Colors.white,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -320,7 +351,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: textColor),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: textColor),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -330,7 +364,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 const SizedBox(height: 2),
                 Text(
                   timeString,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary),
                 ),
               ],
             ),
@@ -394,7 +431,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: textColor),
+                  style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: textColor),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -404,7 +444,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
                 const SizedBox(height: 2),
                 Text(
                   timeString,
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary),
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary),
                 ),
               ],
             ),
@@ -436,11 +479,19 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Add Reminder', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor)),
+              Text('Add Reminder',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textColor)),
               const SizedBox(height: 16),
-              const TextField(decoration: InputDecoration(labelText: 'Medicine / Event Name')),
+              const TextField(
+                  decoration:
+                      InputDecoration(labelText: 'Medicine / Event Name')),
               const SizedBox(height: 12),
-              const TextField(decoration: InputDecoration(labelText: 'Time (e.g. 08:00 AM)')),
+              const TextField(
+                  decoration:
+                      InputDecoration(labelText: 'Time (e.g. 08:00 AM)')),
               const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -461,3 +512,4 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen> {
     );
   }
 }
+
