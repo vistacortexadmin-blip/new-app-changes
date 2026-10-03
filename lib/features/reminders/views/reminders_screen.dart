@@ -742,14 +742,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      ref.read(remindersProvider.notifier).refillStock(
-                            medicineId: med.id,
-                            addedQuantity: 30,
-                          );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Ordered 30 day refill!')),
-                      );
+                      _showRefillModal(context, med);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.warning,
@@ -758,12 +751,109 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('+30 Refill'),
+                    child: const Text('Refill Supply'),
                   ),
                 ),
               ],
             ],
           ),
+        );
+      },
+    );
+  }
+
+  void _showRefillModal(BuildContext context, MedicineReminder med) {
+    int selectedAmount = 30;
+    final customController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Refill ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  const Text('Select amount to add:', style: TextStyle(color: AppColors.textSecondary)),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    children: [10, 30, 60, 90].map((amount) {
+                      return ChoiceChip(
+                        label: Text('+$amount', style: TextStyle(color: selectedAmount == amount ? Colors.white : AppColors.primary)),
+                        selectedColor: AppColors.primary,
+                        backgroundColor: AppColors.primarySurface,
+                        selected: selectedAmount == amount,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setModalState(() {
+                              selectedAmount = amount;
+                              customController.clear();
+                            });
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: customController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Or enter custom amount',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onChanged: (val) {
+                      if (val.isNotEmpty) {
+                        setModalState(() {
+                          selectedAmount = int.tryParse(val) ?? 0;
+                        });
+                      } else {
+                        setModalState(() {
+                          selectedAmount = 30;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: selectedAmount <= 0 ? null : () {
+                        ref.read(remindersProvider.notifier).refillStock(
+                          medicineId: med.id,
+                          addedQuantity: selectedAmount,
+                        );
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('Add $selectedAmount Pills', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
