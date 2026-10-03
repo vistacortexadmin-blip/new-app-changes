@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/analytics_service.dart';
 import '../../../app.dart';
-import 'privacy_policy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -42,35 +40,18 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  Future<void> _navigatePostAuth({bool forceOnboarding = false}) async {
+  void _navigatePostAuth() {
     final currentUser = _authService.currentUser;
     if (currentUser == null) {
       debugPrint('[Security] No active authenticated session found.');
       return;
     }
-
-    final prefs = await SharedPreferences.getInstance();
-    final bool profileCompleted = prefs.getBool('profile_completed') ?? false;
-    final String? profileOwner = prefs.getString('profile_owner_uid');
     if (!mounted) return;
-
-    // Check both local storage AND if the user already has a configured name in Firebase
-    final bool isOwnerValid = profileOwner == null || profileOwner == currentUser.uid;
-    final bool hasDisplayName = currentUser.displayName != null && currentUser.displayName!.trim().isNotEmpty;
-
-    if (!forceOnboarding && (profileCompleted && isOwnerValid || hasDisplayName)) {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const MainNavigationShell()),
-        (route) => false,
-      );
-    } else {
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
-        (route) => false,
-      );
-    }
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const MainNavigationShell()),
+      (route) => false,
+    );
   }
 
   Future<void> _submit() async {
@@ -89,14 +70,16 @@ class _LoginScreenState extends State<LoginScreen> {
           );
         }
         if (mounted) {
-          await _navigatePostAuth(forceOnboarding: _isSignUp);
+          _navigatePostAuth();
         }
       } catch (e) {
         debugPrint('[Auth] Sign In / Sign Up error: $e');
         final errorMsg = _authService.formatAuthError(e);
         if (mounted) {
           // If email is already in use during signup, offer auto-toggle to Sign In
-          if (_isSignUp && (errorMsg.contains('already in use') || errorMsg.contains('already exists'))) {
+          if (_isSignUp &&
+              (errorMsg.contains('already in use') ||
+                  errorMsg.contains('already exists'))) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(errorMsg),
@@ -142,7 +125,7 @@ class _LoginScreenState extends State<LoginScreen> {
             backgroundColor: AppColors.success,
           ),
         );
-        await _navigatePostAuth();
+        _navigatePostAuth();
       } else {
         debugPrint('[Auth] Google sign in was cancelled by user');
       }
@@ -169,7 +152,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (email.isEmpty || !email.contains('@')) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please enter your email above to receive a password reset link.'),
+          content: Text(
+              'Please enter your email above to receive a password reset link.'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -201,7 +185,8 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleAppleSignIn() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Sign in with Apple requires active Apple Developer credentials.'),
+        content: Text(
+            'Sign in with Apple requires active Apple Developer credentials.'),
         backgroundColor: AppColors.primary,
       ),
     );
@@ -276,7 +261,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 44,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF00C6FF), Color(0xFF0072FF), Color(0xFF6A11CB)],
+                            colors: [
+                              Color(0xFF00C6FF),
+                              Color(0xFF0072FF),
+                              Color(0xFF6A11CB)
+                            ],
                           ),
                           borderRadius: BorderRadius.circular(13),
                         ),
@@ -321,7 +310,54 @@ class _LoginScreenState extends State<LoginScreen> {
                       fontSize: 15,
                     ),
                   ),
-                  const SizedBox(height: 36),
+                  const SizedBox(height: 22),
+
+                  // Keep both authentication choices visible without scrolling.
+                  SizedBox(
+                    width: double.infinity,
+                    child: SegmentedButton<bool>(
+                      key: const Key('auth-mode-selector'),
+                      segments: const [
+                        ButtonSegment<bool>(
+                          value: false,
+                          icon: Icon(Icons.login_rounded, size: 18),
+                          label: Text('Sign In'),
+                        ),
+                        ButtonSegment<bool>(
+                          value: true,
+                          icon: Icon(Icons.person_add_alt_1_rounded, size: 18),
+                          label: Text('Sign Up'),
+                        ),
+                      ],
+                      selected: {_isSignUp},
+                      showSelectedIcon: false,
+                      style: ButtonStyle(
+                        backgroundColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? AppColors.primary
+                              : const Color(0xFF131C31),
+                        ),
+                        foregroundColor: WidgetStateProperty.resolveWith(
+                          (states) => states.contains(WidgetState.selected)
+                              ? Colors.white
+                              : const Color(0xFF94A3B8),
+                        ),
+                        side: WidgetStateProperty.all(
+                          const BorderSide(color: Color(0xFF334155)),
+                        ),
+                        textStyle: WidgetStateProperty.all(
+                          const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      onSelectionChanged: (selection) {
+                        setState(() {
+                          _isSignUp = selection.first;
+                          _formKey.currentState?.reset();
+                        });
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 28),
 
                   // Form
                   Form(
@@ -356,12 +392,15 @@ class _LoginScreenState extends State<LoginScreen> {
                           obscure: _obscurePassword,
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
                               color: const Color(0xFF64748B),
                               size: 20,
                             ),
                             onPressed: () {
-                              setState(() => _obscurePassword = !_obscurePassword);
+                              setState(
+                                  () => _obscurePassword = !_obscurePassword);
                             },
                           ),
                           validator: (val) {
@@ -386,12 +425,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             obscure: _obscureConfirm,
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                _obscureConfirm
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
                                 color: const Color(0xFF64748B),
                                 size: 20,
                               ),
                               onPressed: () {
-                                setState(() => _obscureConfirm = !_obscureConfirm);
+                                setState(
+                                    () => _obscureConfirm = !_obscureConfirm);
                               },
                             ),
                             validator: (val) {
@@ -434,7 +476,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
                               elevation: 4,
-                              shadowColor: AppColors.primary.withValues(alpha: 0.5),
+                              shadowColor:
+                                  AppColors.primary.withValues(alpha: 0.5),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(28),
                               ),
@@ -463,7 +506,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         // Divider
                         const Row(
                           children: [
-                            Expanded(child: Divider(color: Color(0xFF334155), thickness: 0.8)),
+                            Expanded(
+                                child: Divider(
+                                    color: Color(0xFF334155), thickness: 0.8)),
                             Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
@@ -474,7 +519,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: Color(0xFF334155), thickness: 0.8)),
+                            Expanded(
+                                child: Divider(
+                                    color: Color(0xFF334155), thickness: 0.8)),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -589,13 +636,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              borderSide:
+                  const BorderSide(color: AppColors.primary, width: 1.5),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: const BorderSide(color: AppColors.error),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
           ),
         ),
       ],
@@ -644,4 +693,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-

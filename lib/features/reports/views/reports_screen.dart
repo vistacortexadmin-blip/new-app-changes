@@ -1,6 +1,15 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+
 import '../../../core/config/app_colors.dart';
+import '../../../core/utils/trend_calculator.dart';
+import '../models/report_model.dart';
+import '../models/report_upload_policy.dart';
 import '../providers/reports_provider.dart';
 import 'report_details_screen.dart';
 
@@ -12,16 +21,24 @@ class ReportsScreen extends ConsumerStatefulWidget {
 }
 
 class _ReportsScreenState extends ConsumerState<ReportsScreen> {
-  String _selectedFilter = 'All';
+  final _searchController = TextEditingController();
+  final _imagePicker = ImagePicker();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(reportsProvider);
-    final reports = state.reports;
+    final reports = state.filteredReports;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final cardColor = isDark ? const Color(0xFF1E293B) : Colors.white;
     final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+    final secondaryColor =
+        isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
     final borderColor = isDark ? const Color(0xFF334155) : AppColors.border;
 
     return Scaffold(
@@ -30,11 +47,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Top Header Row with Title, Subtitle, and circular '+' button
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
@@ -52,142 +67,146 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Store, organize and access all your\nmedical reports in one place.',
+                          'Store, organize and access your medical reports.',
                           style: TextStyle(
                             fontSize: 13,
-                            color: textSecondary,
-                            height: 1.3,
+                            color: secondaryColor,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  // Circular blue '+' button
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.add, color: Colors.white, size: 24),
-                      onPressed: () => _showUploadDialog(context),
+                  const SizedBox(width: 12),
+                  SizedBox(
+                    width: 46,
+                    height: 46,
+                    child: FilledButton(
+                      key: const Key('add-report-button'),
+                      onPressed: state.isUploading
+                          ? null
+                          : () => _showUploadOptions(context),
+                      style: FilledButton.styleFrom(
+                        shape: const CircleBorder(),
+                        padding: EdgeInsets.zero,
+                        backgroundColor: AppColors.primary,
+                      ),
+                      child: state.isUploading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.add_rounded, size: 26),
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 10),
-
-            // 2. Category Filter Chips
+            if (state.isUploading) const LinearProgressIndicator(minHeight: 2),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: TextField(
+                key: const Key('report-search-field'),
+                controller: _searchController,
+                onChanged: ref.read(reportsProvider.notifier).setSearchQuery,
+                decoration: InputDecoration(
+                  hintText: 'Search reports, labs or parameters',
+                  prefixIcon: const Icon(Icons.search_rounded),
+                  suffixIcon: state.searchQuery.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Clear search',
+                          onPressed: () {
+                            _searchController.clear();
+                            ref
+                                .read(reportsProvider.notifier)
+                                .setSearchQuery('');
+                          },
+                          icon: const Icon(Icons.close_rounded),
+                        ),
+                  filled: true,
+                  fillColor: cardColor,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: borderColor),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: borderColor),
+                  ),
+                ),
+              ),
+            ),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
-                children: [
-                  _buildFilterChip('All', isDark, cardBg, borderColor, textSecondary),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Blood Test', isDark, cardBg, borderColor, textSecondary),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Imaging', isDark, cardBg, borderColor, textSecondary),
-                  const SizedBox(width: 8),
-                  _buildFilterChip('Others', isDark, cardBg, borderColor, textSecondary),
-                ],
+                children: _categoryOptions.map((option) {
+                  final selected = state.selectedCategory == option.category;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      key: Key('filter-${option.label}'),
+                      label: Text(option.label),
+                      selected: selected,
+                      showCheckmark: false,
+                      onSelected: (_) => ref
+                          .read(reportsProvider.notifier)
+                          .setCategoryFilter(option.category),
+                      selectedColor: AppColors.primary,
+                      backgroundColor: cardColor,
+                      side: BorderSide(
+                        color: selected ? AppColors.primary : borderColor,
+                      ),
+                      labelStyle: TextStyle(
+                        color: selected ? Colors.white : secondaryColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
             ),
-            const SizedBox(height: 14),
-
-            // 3. Reports List
+            const SizedBox(height: 10),
             Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                children: [
-                  _buildReportTile(
-                    title: 'Blood Test - CBC',
-                    hospital: 'Apollo Hospitals',
-                    date: '12 Aug 2025',
-                    icon: Icons.picture_as_pdf_rounded,
-                    iconColor: const Color(0xFFEF4444),
-                    iconBgColor: isDark ? const Color(0xFF4C1D1D) : const Color(0xFFFEE2E2),
-                    badgeText: 'Normal',
-                    isSuccessBadge: true,
-                    cardBg: cardBg,
-                    textColor: textColor,
-                    textSecondary: textSecondary,
-                    borderColor: borderColor,
-                    isDark: isDark,
-                    onTap: () {
-                      if (reports.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ReportDetailsScreen(report: reports.first),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  _buildReportTile(
-                    title: 'MRI - Brain',
-                    hospital: 'Yashoda Hospitals',
-                    date: '05 Jul 2025',
-                    icon: Icons.personal_injury_rounded,
-                    iconColor: const Color(0xFF2563EB),
-                    iconBgColor: isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF),
-                    badgeText: 'View',
-                    isSuccessBadge: false,
-                    cardBg: cardBg,
-                    textColor: textColor,
-                    textSecondary: textSecondary,
-                    borderColor: borderColor,
-                    isDark: isDark,
-                    onTap: () {
-                      if (reports.length > 1) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ReportDetailsScreen(report: reports[1]),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  _buildReportTile(
-                    title: 'Lipid Profile',
-                    hospital: 'AIG Hospitals',
-                    date: '20 May 2025',
-                    icon: Icons.biotech_rounded,
-                    iconColor: const Color(0xFF0D9488),
-                    iconBgColor: isDark ? const Color(0xFF134E4A) : const Color(0xFFCCFBF1),
-                    badgeText: 'Normal',
-                    isSuccessBadge: true,
-                    cardBg: cardBg,
-                    textColor: textColor,
-                    textSecondary: textSecondary,
-                    borderColor: borderColor,
-                    isDark: isDark,
-                    onTap: () {
-                      if (reports.isNotEmpty) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ReportDetailsScreen(report: reports.first),
-                          ),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
+              child: state.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : state.errorMessage != null && state.reports.isEmpty
+                      ? _ErrorState(
+                          message: state.errorMessage!,
+                          onRetry:
+                              ref.read(reportsProvider.notifier).initialize,
+                        )
+                      : reports.isEmpty
+                          ? _EmptyReportsState(
+                              hasFilter: state.searchQuery.isNotEmpty ||
+                                  state.selectedCategory != null,
+                              onAdd: () => _showUploadOptions(context),
+                            )
+                          : RefreshIndicator(
+                              onRefresh:
+                                  ref.read(reportsProvider.notifier).initialize,
+                              child: ListView.builder(
+                                key: const Key('reports-list'),
+                                padding:
+                                    const EdgeInsets.fromLTRB(20, 4, 20, 28),
+                                itemCount: reports.length,
+                                itemBuilder: (context, index) =>
+                                    _buildReportTile(
+                                  report: reports[index],
+                                  cardColor: cardColor,
+                                  textColor: textColor,
+                                  secondaryColor: secondaryColor,
+                                  borderColor: borderColor,
+                                  isDark: isDark,
+                                ),
+                              ),
+                            ),
             ),
           ],
         ),
@@ -195,151 +214,157 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildFilterChip(
-    String label,
-    bool isDark,
-    Color cardBg,
-    Color borderColor,
-    Color textSecondary,
-  ) {
-    final isSelected = _selectedFilter == label;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedFilter = label;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : cardBg,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : borderColor,
-          ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.25),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ]
-              : null,
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : textSecondary,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildReportTile({
-    required String title,
-    required String hospital,
-    required String date,
-    required IconData icon,
-    required Color iconColor,
-    required Color iconBgColor,
-    required String badgeText,
-    required bool isSuccessBadge,
-    required Color cardBg,
+    required MedicalReport report,
+    required Color cardColor,
     required Color textColor,
-    required Color textSecondary,
+    required Color secondaryColor,
     required Color borderColor,
     required bool isDark,
-    required VoidCallback onTap,
   }) {
+    final needsReview = report.isFlagged ||
+        report.parameters.any((item) => item.status != ValueStatus.normal);
+    final badgeText = switch (report.analysisStatus) {
+      ReportAnalysisStatus.failed => 'Analysis failed',
+      ReportAnalysisStatus.noValuesFound => 'No values found',
+      ReportAnalysisStatus.notStarted => 'Stored',
+      ReportAnalysisStatus.completed => needsReview ? 'Review' : 'Normal',
+    };
+    final badgeColor = switch (report.analysisStatus) {
+      ReportAnalysisStatus.failed => AppColors.error,
+      ReportAnalysisStatus.noValuesFound ||
+      ReportAnalysisStatus.notStarted =>
+        AppColors.textMuted,
+      ReportAnalysisStatus.completed =>
+        needsReview ? AppColors.warning : AppColors.success,
+    };
+    final icon = report.documentType == ReportDocumentType.image
+        ? Icons.image_rounded
+        : _categoryIcon(report.category);
+
     return Container(
+      key: Key('report-${report.id}'),
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: cardBg,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.025),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: InkWell(
-        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
+        onTap: () => _openReport(report),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(15),
           child: Row(
             children: [
-              // Icon container
               Container(
-                width: 48,
-                height: 48,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
-                  color: iconBgColor,
+                  color:
+                      _categoryColor(report.category).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: iconColor, size: 24),
+                child: Icon(
+                  icon,
+                  color: _categoryColor(report.category),
+                  size: 25,
+                ),
               ),
-              const SizedBox(width: 14),
-
-              // Title and metadata
+              const SizedBox(width: 13),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      title,
+                      report.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: textColor,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '$hospital · $date',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: textSecondary,
-                      ),
+                      '${report.labProvider} • ${DateFormat('dd MMM yyyy').format(report.reportDate)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 11.5, color: secondaryColor),
+                    ),
+                    const SizedBox(height: 7),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: badgeColor.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            badgeText,
+                            style: TextStyle(
+                              color: badgeColor,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 7),
+                        Flexible(
+                          child: Text(
+                            report.categoryDisplayName,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: secondaryColor,
+                              fontSize: 10.5,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-
-              // Status badge
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isSuccessBadge
-                      ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5))
-                      : (isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF)),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSuccessBadge
-                        ? (isDark ? const Color(0xFF059669) : const Color(0xFFA7F3D0))
-                        : (isDark ? const Color(0xFF2563EB) : const Color(0xFFBFDBFE)),
+              PopupMenuButton<String>(
+                key: Key('report-menu-${report.id}'),
+                tooltip: 'Report actions',
+                icon: Icon(Icons.more_vert_rounded, color: secondaryColor),
+                onSelected: (action) {
+                  if (action == 'view') _openReport(report);
+                  if (action == 'delete') _confirmDelete(report);
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'view',
+                    child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.visibility_outlined),
+                      title: Text('View report'),
+                    ),
                   ),
-                ),
-                child: Text(
-                  badgeText,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isSuccessBadge ? const Color(0xFF10B981) : AppColors.primary,
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      dense: true,
+                      leading:
+                          Icon(Icons.delete_outline, color: AppColors.error),
+                      title: Text('Delete report'),
+                    ),
                   ),
-                ),
+                ],
               ),
-              const SizedBox(width: 6),
-
-              // Three dots menu
-              Icon(Icons.more_vert_rounded, color: textSecondary, size: 20),
             ],
           ),
         ),
@@ -347,75 +372,587 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  void _showUploadDialog(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF1E293B) : Colors.white;
-    final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: surfaceColor,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+  void _openReport(MedicalReport report) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReportDetailsScreen(report: report),
       ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
+    );
+  }
+
+  Future<void> _confirmDelete(MedicalReport report) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete report?'),
+        content: Text(
+          '“${report.title}” and its stored document will be removed from this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    final deleted =
+        await ref.read(reportsProvider.notifier).deleteReport(report.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(deleted ? 'Report deleted.' : 'Could not delete report.'),
+      ),
+    );
+  }
+
+  Future<void> _showUploadOptions(BuildContext pageContext) async {
+    final isDark = Theme.of(pageContext).brightness == Brightness.dark;
+    await showModalBottomSheet<void>(
+      context: pageContext,
+      backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Upload Report',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
+              const Text(
+                'Add Medical Report',
+                style: TextStyle(fontSize: 19, fontWeight: FontWeight.w900),
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Upload a PDF or take a photo of your paper test report.',
-                style: TextStyle(fontSize: 13, color: textSecondary),
+              const SizedBox(height: 5),
+              const Text(
+                'The original file will be copied into the app’s private storage.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 20),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E3A5F) : AppColors.primarySurface,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary),
-                ),
-                title: Text('Choose PDF Document', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
-                subtitle: Text('From your device storage', style: TextStyle(fontSize: 12, color: textSecondary)),
+              const SizedBox(height: 6),
+              const Text(
+                'Maximum ${ReportUploadPolicy.maxFileSizeLabel} per file and ${ReportUploadPolicy.maxVaultSizeLabel} total.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 16),
+              _UploadOption(
+                key: const Key('choose-pdf-option'),
+                icon: Icons.picture_as_pdf_rounded,
+                title: 'Choose PDF Document',
+                subtitle:
+                    'Select a PDF up to ${ReportUploadPolicy.maxFileSizeLabel}',
                 onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Report uploaded and transcribed successfully!')),
-                  );
+                  Navigator.pop(sheetContext);
+                  _pickPdf();
                 },
               ),
-              ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E3A5F) : AppColors.primarySurface,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
-                ),
-                title: Text('Capture with Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
-                subtitle: Text('Take a photo of physical report sheet', style: TextStyle(fontSize: 12, color: textSecondary)),
+              const SizedBox(height: 10),
+              _UploadOption(
+                key: const Key('capture-report-option'),
+                icon: Icons.document_scanner_rounded,
+                title: 'Capture with Camera',
+                subtitle: 'Photograph a physical report page',
                 onTap: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Report scanned and processed!')),
-                  );
+                  Navigator.pop(sheetContext);
+                  _captureReport();
                 },
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickPdf() async {
+    try {
+      final file = await FilePicker.pickFile(
+        type: FileType.custom,
+        allowedExtensions: const ['pdf'],
+      );
+      if (file == null) return;
+      if (file.path == null) {
+        _showMessage('This file is not available offline. Download it first.');
+        return;
+      }
+      if (!await _validateSelectedFile(file.path!)) return;
+      await _collectDetailsAndImport(
+        sourcePath: file.path!,
+        originalFileName: file.name,
+        documentType: ReportDocumentType.pdf,
+      );
+    } catch (_) {
+      _showMessage('Could not open the document picker.');
+    }
+  }
+
+  Future<void> _captureReport() async {
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 2200,
+        maxHeight: 3200,
+        preferredCameraDevice: CameraDevice.rear,
+      );
+      if (image == null) return;
+      if (!await _validateSelectedFile(image.path)) return;
+      await _collectDetailsAndImport(
+        sourcePath: image.path,
+        originalFileName: image.name,
+        documentType: ReportDocumentType.image,
+      );
+    } catch (_) {
+      _showMessage('Camera access failed. Check the camera permission.');
+    }
+  }
+
+  Future<void> _collectDetailsAndImport({
+    required String sourcePath,
+    required String originalFileName,
+    required ReportDocumentType documentType,
+  }) async {
+    if (!mounted) return;
+    final initialTitle = _titleFromFileName(originalFileName);
+    final draft = await showModalBottomSheet<ReportImportDraft>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => _ReportDetailsForm(
+        sourcePath: sourcePath,
+        originalFileName: originalFileName,
+        documentType: documentType,
+        initialTitle: initialTitle,
+      ),
+    );
+    if (draft == null || !mounted) return;
+
+    final imported =
+        await ref.read(reportsProvider.notifier).importReport(draft);
+    if (!mounted) return;
+    if (imported == null) {
+      _showMessage(
+        ref.read(reportsProvider).errorMessage ?? 'Import failed.',
+      );
+      return;
+    }
+    final importMessage = switch (imported.analysisStatus) {
+      ReportAnalysisStatus.completed =>
+        '“${imported.title}” was stored and analyzed.',
+      ReportAnalysisStatus.noValuesFound =>
+        '“${imported.title}” was stored, but no supported values were found.',
+      ReportAnalysisStatus.failed =>
+        '“${imported.title}” was stored. Analysis can be retried from its details.',
+      ReportAnalysisStatus.notStarted =>
+        '“${imported.title}” was stored on this device.',
+    };
+    _showMessage(importMessage);
+  }
+
+  Future<bool> _validateSelectedFile(String path) async {
+    final file = File(path);
+    if (!await file.exists()) {
+      _showMessage('The selected file is no longer available.');
+      return false;
+    }
+    final bytes = await file.length();
+    if (bytes <= 0) {
+      _showMessage('The selected file is empty.');
+      return false;
+    }
+    if (bytes > ReportUploadPolicy.maxFileSizeBytes) {
+      _showMessage(
+        'Choose a file smaller than ${ReportUploadPolicy.maxFileSizeLabel}.',
+      );
+      return false;
+    }
+    return true;
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _titleFromFileName(String name) {
+    final dot = name.lastIndexOf('.');
+    final base = dot > 0 ? name.substring(0, dot) : name;
+    final words = base
+        .replaceAll(RegExp(r'[_-]+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .split(' ');
+    if (words.isEmpty || words.first.isEmpty) return 'Medical report';
+    return words
+        .map((word) =>
+            '${word.substring(0, 1).toUpperCase()}${word.substring(1)}')
+        .join(' ');
+  }
+
+  IconData _categoryIcon(ReportCategory category) {
+    switch (category) {
+      case ReportCategory.radiology:
+        return Icons.image_search_rounded;
+      case ReportCategory.cardiology:
+        return Icons.monitor_heart_rounded;
+      case ReportCategory.diabeticPanel:
+        return Icons.water_drop_rounded;
+      case ReportCategory.urineAnalysis:
+        return Icons.science_rounded;
+      case ReportCategory.bloodTest:
+      case ReportCategory.lipidProfile:
+      case ReportCategory.generalCheckup:
+        return Icons.description_rounded;
+    }
+  }
+
+  Color _categoryColor(ReportCategory category) {
+    switch (category) {
+      case ReportCategory.radiology:
+        return AppColors.accentPurple;
+      case ReportCategory.cardiology:
+        return AppColors.error;
+      case ReportCategory.diabeticPanel:
+        return AppColors.accentBlue;
+      case ReportCategory.urineAnalysis:
+        return AppColors.accentAmber;
+      case ReportCategory.bloodTest:
+        return AppColors.accentRose;
+      case ReportCategory.lipidProfile:
+        return AppColors.accentTeal;
+      case ReportCategory.generalCheckup:
+        return AppColors.primary;
+    }
+  }
+}
+
+class _CategoryOption {
+  final String label;
+  final ReportCategory? category;
+
+  const _CategoryOption(this.label, this.category);
+}
+
+const _categoryOptions = [
+  _CategoryOption('All', null),
+  _CategoryOption('Blood', ReportCategory.bloodTest),
+  _CategoryOption('Lipids', ReportCategory.lipidProfile),
+  _CategoryOption('Diabetes', ReportCategory.diabeticPanel),
+  _CategoryOption('Cardiology', ReportCategory.cardiology),
+  _CategoryOption('Imaging', ReportCategory.radiology),
+  _CategoryOption('Urine', ReportCategory.urineAnalysis),
+  _CategoryOption('General', ReportCategory.generalCheckup),
+];
+
+class _UploadOption extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _UploadOption({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.primarySurface,
+      borderRadius: BorderRadius.circular(16),
+      child: ListTile(
+        onTap: onTap,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        leading: CircleAvatar(
+          backgroundColor: Colors.white,
+          child: Icon(icon, color: AppColors.primary),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.chevron_right_rounded),
+      ),
+    );
+  }
+}
+
+class _ReportDetailsForm extends StatefulWidget {
+  final String sourcePath;
+  final String originalFileName;
+  final ReportDocumentType documentType;
+  final String initialTitle;
+
+  const _ReportDetailsForm({
+    required this.sourcePath,
+    required this.originalFileName,
+    required this.documentType,
+    required this.initialTitle,
+  });
+
+  @override
+  State<_ReportDetailsForm> createState() => _ReportDetailsFormState();
+}
+
+class _ReportDetailsFormState extends State<_ReportDetailsForm> {
+  final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _titleController;
+  final _labController = TextEditingController();
+  final _doctorController = TextEditingController();
+  ReportCategory _category = ReportCategory.generalCheckup;
+  DateTime _reportDate = DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.initialTitle);
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _labController.dispose();
+    _doctorController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboard = MediaQuery.viewInsetsOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, 20, 20, keyboard + 24),
+      child: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Report details',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              Text(
+                widget.originalFileName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                key: const Key('report-title-input'),
+                controller: _titleController,
+                decoration:
+                    const InputDecoration(labelText: 'Test / report name'),
+                validator: _required,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                key: const Key('report-lab-input'),
+                controller: _labController,
+                decoration: const InputDecoration(labelText: 'Lab or hospital'),
+                validator: _required,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _doctorController,
+                decoration: const InputDecoration(
+                  labelText: 'Doctor (optional)',
+                ),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<ReportCategory>(
+                key: const Key('report-category-input'),
+                initialValue: _category,
+                decoration: const InputDecoration(labelText: 'Report category'),
+                items: ReportCategory.values
+                    .map(
+                      (category) => DropdownMenuItem(
+                        value: category,
+                        child: Text(_categoryName(category)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) setState(() => _category = value);
+                },
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                leading: const Icon(
+                  Icons.calendar_today_rounded,
+                  color: AppColors.primary,
+                ),
+                title: const Text('Report date'),
+                subtitle: Text(DateFormat('dd MMMM yyyy').format(_reportDate)),
+                trailing: TextButton(
+                  onPressed: _pickDate,
+                  child: const Text('Change'),
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('save-report-button'),
+                  onPressed: _submit,
+                  icon: const Icon(Icons.lock_rounded),
+                  label: const Text('Store Report'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String? _required(String? value) =>
+      value == null || value.trim().isEmpty ? 'This field is required' : null;
+
+  Future<void> _pickDate() async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _reportDate,
+      firstDate: DateTime(1950),
+      lastDate: DateTime.now(),
+    );
+    if (date != null) setState(() => _reportDate = date);
+  }
+
+  void _submit() {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    Navigator.pop(
+      context,
+      ReportImportDraft(
+        sourcePath: widget.sourcePath,
+        originalFileName: widget.originalFileName,
+        documentType: widget.documentType,
+        title: _titleController.text,
+        category: _category,
+        labProvider: _labController.text,
+        doctorName: _doctorController.text,
+        reportDate: _reportDate,
+      ),
+    );
+  }
+}
+
+String _categoryName(ReportCategory category) {
+  switch (category) {
+    case ReportCategory.bloodTest:
+      return 'Blood test / CBC';
+    case ReportCategory.lipidProfile:
+      return 'Lipid profile';
+    case ReportCategory.diabeticPanel:
+      return 'Diabetes / HbA1c';
+    case ReportCategory.cardiology:
+      return 'Cardiology';
+    case ReportCategory.radiology:
+      return 'MRI / X-Ray / Imaging';
+    case ReportCategory.urineAnalysis:
+      return 'Urine analysis';
+    case ReportCategory.generalCheckup:
+      return 'General checkup';
+  }
+}
+
+class _EmptyReportsState extends StatelessWidget {
+  final bool hasFilter;
+  final VoidCallback onAdd;
+
+  const _EmptyReportsState({required this.hasFilter, required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.folder_copy_outlined,
+              size: 58,
+              color: AppColors.textMuted,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              hasFilter ? 'No matching reports' : 'No reports stored yet',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              hasFilter
+                  ? 'Try another search or category.'
+                  : 'Add a PDF or scan a paper report to get started.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+            if (!hasFilter) ...[
+              const SizedBox(height: 18),
+              FilledButton.icon(
+                onPressed: onAdd,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Add report'),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final Future<void> Function() onRetry;
+
+  const _ErrorState({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.error_outline_rounded,
+              color: AppColors.error, size: 48),
+          const SizedBox(height: 12),
+          Text(message),
+          const SizedBox(height: 12),
+          OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
+        ],
+      ),
     );
   }
 }

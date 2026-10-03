@@ -5,162 +5,8 @@ import '../../features/family_connect/models/family_model.dart';
 import '../../features/test_booking/models/test_booking_model.dart';
 
 class SeedData {
-  // 1. Initial Medical Reports with Parameters
-  static List<MedicalReport> get initialReports => [
-        MedicalReport(
-          id: 'rep_001',
-          title: 'Comprehensive Metabolic & Lipid Panel',
-          category: ReportCategory.lipidProfile,
-          labProvider: 'Apollo Diagnostic Specialty Labs',
-          doctorName: 'Dr. Arvind Sharma, MD (Cardiology)',
-          reportDate: DateTime.now().subtract(const Duration(days: 3)),
-          pdfAssetPath: '',
-          summaryPlainLanguage:
-              'Your total cholesterol and LDL (bad cholesterol) have decreased by 14% compared to last month following your statin routine. Fasting blood sugar is stable and within normal target range.',
-          questionsForDoctor: [
-            'Should I continue the current 20mg Atorvastatin dosage for another 3 months?',
-            'Is the current diet adequate for maintaining the improved HDL cholesterol level?',
-            'When should the next liver function panel be scheduled?'
-          ],
-          isFlagged: false,
-          parameters: [
-            TestParameter(
-              id: 'param_01',
-              name: 'Total Cholesterol',
-              value: 178,
-              unit: 'mg/dL',
-              minNormal: 125,
-              maxNormal: 200,
-              interpretation: 'Optimal target range achieved.',
-            ),
-            TestParameter(
-              id: 'param_02',
-              name: 'LDL Cholesterol (Bad)',
-              value: 94,
-              unit: 'mg/dL',
-              minNormal: 50,
-              maxNormal: 100,
-              interpretation: 'Well controlled with prescribed therapy.',
-            ),
-            TestParameter(
-              id: 'param_03',
-              name: 'HDL Cholesterol (Good)',
-              value: 48,
-              unit: 'mg/dL',
-              minNormal: 40,
-              maxNormal: 60,
-              interpretation: 'Normal cardioprotective level.',
-            ),
-            TestParameter(
-              id: 'param_04',
-              name: 'Triglycerides',
-              value: 135,
-              unit: 'mg/dL',
-              minNormal: 50,
-              maxNormal: 150,
-              interpretation: 'Normal baseline.',
-            ),
-            TestParameter(
-              id: 'param_05',
-              name: 'Fasting Blood Glucose',
-              value: 92,
-              unit: 'mg/dL',
-              minNormal: 70,
-              maxNormal: 99,
-              interpretation: 'Normal fasting glycemic balance.',
-            ),
-          ],
-        ),
-        MedicalReport(
-          id: 'rep_002',
-          title: 'Complete Blood Count (CBC) & Ferritin',
-          category: ReportCategory.bloodTest,
-          labProvider: 'MaxCare Path Labs Ltd.',
-          doctorName: 'Dr. Priya Desai, MD (Internal Medicine)',
-          reportDate: DateTime.now().subtract(const Duration(days: 28)),
-          pdfAssetPath: '',
-          summaryPlainLanguage:
-              'Hemoglobin and platelet levels are healthy. White blood cell count indicates normal immune function with no signs of acute infection.',
-          questionsForDoctor: [
-            'Are my iron/ferritin reserves sufficient to discontinue iron supplements?',
-            'Can I resume vigorous cardiovascular training?'
-          ],
-          isFlagged: false,
-          parameters: [
-            TestParameter(
-              id: 'param_11',
-              name: 'Hemoglobin',
-              value: 14.2,
-              unit: 'g/dL',
-              minNormal: 13.0,
-              maxNormal: 17.0,
-              interpretation: 'Optimal oxygen-carrying capacity.',
-            ),
-            TestParameter(
-              id: 'param_12',
-              name: 'WBC (Total Leucocytes)',
-              value: 6800,
-              unit: '/mcL',
-              minNormal: 4500,
-              maxNormal: 11000,
-              interpretation: 'Normal immune baseline.',
-            ),
-            TestParameter(
-              id: 'param_13',
-              name: 'Platelet Count',
-              value: 245000,
-              unit: '/mcL',
-              minNormal: 150000,
-              maxNormal: 450000,
-              interpretation: 'Normal clotting capability.',
-            ),
-            TestParameter(
-              id: 'param_14',
-              name: 'Serum Ferritin',
-              value: 68,
-              unit: 'ng/mL',
-              minNormal: 30,
-              maxNormal: 300,
-              interpretation: 'Iron stores replenished.',
-            ),
-          ],
-        ),
-        MedicalReport(
-          id: 'rep_003',
-          title: 'Glycated Hemoglobin (HbA1c) 3-Month Trend',
-          category: ReportCategory.diabeticPanel,
-          labProvider: 'Quest Diagnostic Center',
-          doctorName: 'Dr. Rajiv Menon, Endocrinologist',
-          reportDate: DateTime.now().subtract(const Duration(days: 65)),
-          pdfAssetPath: '',
-          summaryPlainLanguage:
-              'HbA1c level is 5.8%, reflecting stable glucose regulation over the prior 90-day period without hypoglycemic episodes.',
-          questionsForDoctor: [
-            'Do I need to check post-prandial glucose daily or weekly?',
-          ],
-          isFlagged: false,
-          parameters: [
-            TestParameter(
-              id: 'param_21',
-              name: 'HbA1c',
-              value: 5.8,
-              unit: '%',
-              minNormal: 4.0,
-              maxNormal: 5.6,
-              interpretation: 'Prediabetes boundary; lifestyle controlled.',
-            ),
-            TestParameter(
-              id: 'param_22',
-              name: 'Estimated Avg Glucose (eAG)',
-              value: 120,
-              unit: 'mg/dL',
-              minNormal: 90,
-              maxNormal: 130,
-              interpretation: 'Good long-term consistency.',
-            ),
-          ],
-        ),
-      ];
+  // Reports intentionally start empty. Only user-imported reports are shown.
+  static List<MedicalReport> get initialReports => [];
 
   // 2. Active Medicine Schedules & Refill Tracker
   static List<MedicineReminder> get initialReminders => [
@@ -237,7 +83,8 @@ class SeedData {
           testName: 'Follow-up Fasting Lipid Profile',
           labOrClinicName: 'Apollo Diagnostics - Central Branch',
           scheduledDate: DateTime.now().add(const Duration(days: 14)),
-          preparationInstructions: '10-12 hours overnight fasting mandatory. Water permitted.',
+          preparationInstructions:
+              '10-12 hours overnight fasting mandatory. Water permitted.',
           relatedReportId: 'rep_001',
         ),
         NextTestReminder(
@@ -245,7 +92,8 @@ class SeedData {
           testName: 'Routine HbA1c & Kidney Function (KFT)',
           labOrClinicName: 'MaxCare Pathology',
           scheduledDate: DateTime.now().add(const Duration(days: 25)),
-          preparationInstructions: 'No fasting required for HbA1c. Stay well hydrated.',
+          preparationInstructions:
+              'No fasting required for HbA1c. Stay well hydrated.',
           relatedReportId: 'rep_003',
         ),
       ];
@@ -270,7 +118,8 @@ class SeedData {
           DailyCareTask(
             id: 'task_01',
             title: 'Morning Ice Compress (15 mins)',
-            description: 'Apply wrapped cold pack over knee to soothe swelling.',
+            description:
+                'Apply wrapped cold pack over knee to soothe swelling.',
             timeOfDay: '08:00 AM',
             category: CareTaskCategory.restMilestone,
             isCompleted: true,
@@ -288,7 +137,8 @@ class SeedData {
           DailyCareTask(
             id: 'task_03',
             title: 'Incision Site & Bandage Check',
-            description: 'Inspect dressing edges for dryness and normal healing.',
+            description:
+                'Inspect dressing edges for dryness and normal healing.',
             timeOfDay: '03:00 PM',
             category: CareTaskCategory.woundDressing,
             isCompleted: false,
@@ -318,29 +168,45 @@ class SeedData {
         dailyMeals: [
           MealGuidance(
             mealType: 'Breakfast (08:00 - 09:00 AM)',
-            recommendedFood: 'Steel-cut oats with chia seeds, crushed walnuts, blueberries, and boiled egg whites.',
-            benefits: 'High soluble fiber to lower LDL cholesterol; steady energy release.',
+            recommendedFood:
+                'Steel-cut oats with chia seeds, crushed walnuts, blueberries, and boiled egg whites.',
+            benefits:
+                'High soluble fiber to lower LDL cholesterol; steady energy release.',
             caloriesAndNutrients: '380 kcal · 18g Protein · 8g Fiber',
-            avoidFoods: ['Sugary breakfast cereals', 'Bakery pastries', 'Processed sausage'],
+            avoidFoods: [
+              'Sugary breakfast cereals',
+              'Bakery pastries',
+              'Processed sausage'
+            ],
           ),
           MealGuidance(
             mealType: 'Lunch (01:00 - 02:00 PM)',
-            recommendedFood: 'Quinoa bowl with grilled chicken or steamed paneer, mixed greens, avocado, and olive oil vinaigrette.',
-            benefits: 'High bio-available protein for post-surgical tissue repair.',
+            recommendedFood:
+                'Quinoa bowl with grilled chicken or steamed paneer, mixed greens, avocado, and olive oil vinaigrette.',
+            benefits:
+                'High bio-available protein for post-surgical tissue repair.',
             caloriesAndNutrients: '520 kcal · 32g Protein · 12g Fiber',
-            avoidFoods: ['Deep-fried fast food', 'High-sodium canned soups', 'White bread'],
+            avoidFoods: [
+              'Deep-fried fast food',
+              'High-sodium canned soups',
+              'White bread'
+            ],
           ),
           MealGuidance(
             mealType: 'Evening Snack (05:00 PM)',
-            recommendedFood: 'Handful of roasted almonds + warm green tea or tender coconut water.',
-            benefits: 'Magnesium and polyphenols supporting cardiovascular vessel elasticity.',
+            recommendedFood:
+                'Handful of roasted almonds + warm green tea or tender coconut water.',
+            benefits:
+                'Magnesium and polyphenols supporting cardiovascular vessel elasticity.',
             caloriesAndNutrients: '160 kcal · 6g Protein · 4g Fiber',
             avoidFoods: ['Salted potato chips', 'Sugary sodas'],
           ),
           MealGuidance(
             mealType: 'Dinner (07:30 - 08:30 PM)',
-            recommendedFood: 'Steamed vegetable stew with lentils (dal) and one multi-grain roti, light cucumber salad.',
-            benefits: 'Light evening digestion, preventing night-time glycemic spikes.',
+            recommendedFood:
+                'Steamed vegetable stew with lentils (dal) and one multi-grain roti, light cucumber salad.',
+            benefits:
+                'Light evening digestion, preventing night-time glycemic spikes.',
             caloriesAndNutrients: '410 kcal · 20g Protein · 9g Fiber',
             avoidFoods: ['Heavy cream curries', 'Late-night sugary desserts'],
           ),
@@ -427,8 +293,10 @@ class SeedData {
           id: 'test_01',
           name: 'Comprehensive Health & Lipid Profile',
           category: 'Blood & Metabolic',
-          description: '65 vital parameters including Complete Blood Count, Lipid Panel, Liver & Kidney profiles.',
-          preparationInstruction: '10-12 hours fasting required. Morning sample collection.',
+          description:
+              '65 vital parameters including Complete Blood Count, Lipid Panel, Liver & Kidney profiles.',
+          preparationInstruction:
+              '10-12 hours fasting required. Morning sample collection.',
           price: 1299.0,
           reportDeliveryTime: 'Within 12 Hours',
           includedParameters: [
@@ -443,7 +311,8 @@ class SeedData {
           id: 'test_02',
           name: 'Glycated Hemoglobin (HbA1c) Test',
           category: 'Diabetic Health',
-          description: 'Gold-standard test measuring 3-month average blood glucose regulation.',
+          description:
+              'Gold-standard test measuring 3-month average blood glucose regulation.',
           preparationInstruction: 'No fasting required. Any time of day.',
           price: 450.0,
           reportDeliveryTime: 'Within 6 Hours',
@@ -453,8 +322,10 @@ class SeedData {
           id: 'test_03',
           name: 'Thyroid Function Ultra Panel (T3, T4, TSH)',
           category: 'Endocrinology',
-          description: 'Measures total & free thyroid hormone balance for metabolic and energy health.',
-          preparationInstruction: 'Morning sample preferred before taking thyroid medication.',
+          description:
+              'Measures total & free thyroid hormone balance for metabolic and energy health.',
+          preparationInstruction:
+              'Morning sample preferred before taking thyroid medication.',
           price: 650.0,
           reportDeliveryTime: 'Same Day (8 Hours)',
           includedParameters: ['Total T3', 'Total T4', 'Ultrasensitive TSH'],
@@ -463,7 +334,8 @@ class SeedData {
           id: 'test_04',
           name: 'Vitamin D3 & Vitamin B12 Duo',
           category: 'Vital Vitamins',
-          description: 'Essential bone, nerve, and energy metabolism vitamin level evaluation.',
+          description:
+              'Essential bone, nerve, and energy metabolism vitamin level evaluation.',
           preparationInstruction: 'No special preparation needed.',
           price: 999.0,
           reportDeliveryTime: 'Within 24 Hours',

@@ -1,33 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
 import '../../../core/config/app_colors.dart';
 import '../../../core/security/security_audit_model.dart';
 import '../../../core/security/security_audit_service.dart';
+import '../../../core/utils/safety_disclaimer.dart';
+import '../../../core/utils/trend_calculator.dart';
 import '../models/report_model.dart';
-import 'pdf_view_modal.dart';
+import '../providers/reports_provider.dart';
 import 'parameter_trend_screen.dart';
+import 'pdf_view_modal.dart';
 
-class ReportDetailsScreen extends StatefulWidget {
+class ReportDetailsScreen extends ConsumerStatefulWidget {
   final MedicalReport report;
 
   const ReportDetailsScreen({super.key, required this.report});
 
   @override
-  State<ReportDetailsScreen> createState() => _ReportDetailsScreenState();
+  ConsumerState<ReportDetailsScreen> createState() =>
+      _ReportDetailsScreenState();
 }
 
-class _ReportDetailsScreenState extends State<ReportDetailsScreen>
+class _ReportDetailsScreenState extends ConsumerState<ReportDetailsScreen>
     with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+  late final TabController _tabController;
   String _selectedDietFilter = 'Daily Plan';
 
   @override
   void initState() {
     super.initState();
-    // Default to 'Analysis' tab (index 1) as seen prominently in Screen 4
-    _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
-
-    // Record HIPAA Security Audit Event for PHI Record Access
+    _tabController = TabController(length: 3, vsync: this);
     SecurityAuditService().record(
       actionType: AuditActionType.phiReportViewed,
       resourceType: AuditResourceType.phiMedicalReport,
@@ -48,13 +51,17 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final report = widget.report;
-
+    final reportState = ref.watch(reportsProvider);
+    final report = reportState.reports
+            .where((item) => item.id == widget.report.id)
+            .firstOrNull ??
+        widget.report;
+    final isAnalyzing = reportState.analyzingReportIds.contains(report.id);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.pop(context),
         ),
         title: Column(
@@ -62,33 +69,27 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen>
           children: [
             Text(
               report.title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
             ),
             Text(
               '${DateFormat('dd MMM yyyy').format(report.reportDate)} • ${report.labProvider}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.normal,
               ),
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert_rounded, color: AppColors.textPrimary),
-            onPressed: () {},
-          ),
-        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
             decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
             child: TabBar(
               controller: _tabController,
@@ -98,12 +99,8 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen>
               indicatorWeight: 3,
               indicatorSize: TabBarIndicatorSize.tab,
               labelStyle: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
               ),
               tabs: const [
                 Tab(text: 'Report'),
@@ -117,463 +114,189 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen>
       body: TabBarView(
         controller: _tabController,
         children: [
-          // Tab 1: Original Report View
-          _buildReportTab(context, report),
-
-          // Tab 2: Analysis View matching Screen 4
-          _buildAnalysisTab(context, report),
-
-          // Tab 3: Diet Plan View matching Screen 5
-          _buildDietPlanTab(context, report),
+          _buildReportTab(report, isAnalyzing),
+          _buildAnalysisTab(report, isAnalyzing),
+          _buildDietPlanTab(report, isAnalyzing),
         ],
       ),
     );
   }
 
-  // ─── TAB 1: REPORT ───
-  Widget _buildReportTab(BuildContext context, MedicalReport report) {
-    return SingleChildScrollView(
+  Widget _buildReportTab(MedicalReport report, bool isAnalyzing) {
+    return ListView(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primarySurface,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        report.categoryDisplayName,
-                        style: const TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                    const Text('Verified & Sealed', style: TextStyle(color: Color(0xFF10B981), fontSize: 11, fontWeight: FontWeight.w600)),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  report.title,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Lab: ${report.labProvider}\nDoctor: ${report.doctorName}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.4),
-                ),
-                const Divider(height: 28, color: AppColors.divider),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    icon: const Icon(Icons.picture_as_pdf_rounded, size: 18),
-                    label: const Text('View Original Lab Document'),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PdfViewerModal(
-                            title: report.title,
-                            assetPath: report.pdfAssetPath,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Text('Extracted Parameters', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-          const SizedBox(height: 12),
-          ...report.parameters.map((param) => _buildReportParamRow(context, param)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReportParamRow(BuildContext context, TestParameter param) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
+      children: [
+        _card(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(param.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 2),
-              Text('Range: ${param.minNormal} - ${param.maxNormal} ${param.unit}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+              Row(
+                children: [
+                  _pill(
+                    report.categoryDisplayName,
+                    AppColors.primary,
+                    AppColors.primarySurface,
+                  ),
+                  const Spacer(),
+                  Icon(
+                    report.hasDocument
+                        ? Icons.lock_rounded
+                        : Icons.info_outline_rounded,
+                    size: 15,
+                    color: report.hasDocument
+                        ? AppColors.success
+                        : AppColors.textMuted,
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    report.hasDocument
+                        ? 'Stored on device'
+                        : 'No document attached',
+                    style: TextStyle(
+                      color: report.hasDocument
+                          ? AppColors.success
+                          : AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                report.title,
+                style: const TextStyle(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _metadataRow(Icons.local_hospital_outlined, report.labProvider),
+              const SizedBox(height: 6),
+              _metadataRow(Icons.person_outline_rounded, report.doctorName),
+              if (report.originalFileName != null) ...[
+                const SizedBox(height: 6),
+                _metadataRow(
+                  Icons.attach_file_rounded,
+                  report.originalFileName!,
+                ),
+              ],
+              const Divider(height: 30),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('view-original-document'),
+                  onPressed: report.hasDocument
+                      ? () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PdfViewerModal(
+                                title: report.title,
+                                assetPath: report.pdfAssetPath,
+                                documentType: report.documentType,
+                                originalFileName: report.originalFileName,
+                              ),
+                            ),
+                          )
+                      : null,
+                  icon: Icon(
+                    report.documentType == ReportDocumentType.image
+                        ? Icons.image_outlined
+                        : Icons.picture_as_pdf_rounded,
+                    size: 19,
+                  ),
+                  label: Text(
+                    report.hasDocument
+                        ? 'View Original Document'
+                        : 'No Original Document Attached',
+                  ),
+                ),
+              ),
             ],
           ),
-          Text('${param.value} ${param.unit}', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: AppColors.textPrimary)),
-        ],
-      ),
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'Extracted Parameters',
+          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 10),
+        if (report.parameters.isEmpty)
+          _analysisEmptyState(report, isAnalyzing)
+        else
+          ...report.parameters.map(_parameterRow),
+      ],
     );
   }
 
-  // ─── TAB 2: ANALYSIS MATCHING SCREEN 4 ───
-  Widget _buildAnalysisTab(BuildContext context, MedicalReport report) {
-    return SingleChildScrollView(
+  Widget _buildAnalysisTab(MedicalReport report, bool isAnalyzing) {
+    final abnormal = report.parameters
+        .where((item) => item.status != ValueStatus.normal)
+        .length;
+    return ListView(
       padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 1. Overall Result Looks Good! Card matching Screen 4
+      children: [
+        if (isAnalyzing)
+          _card(
+            child: const Row(
+              children: [
+                SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+                SizedBox(width: 12),
+                Expanded(child: Text('Extracting and analyzing this report…')),
+              ],
+            ),
+          )
+        else if (report.parameters.isEmpty)
+          _analysisEmptyState(report, isAnalyzing)
+        else
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFA7F3D0)),
+              color: abnormal == 0
+                  ? AppColors.successSurface
+                  : AppColors.warningSurface,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: abnormal == 0
+                    ? AppColors.success.withValues(alpha: 0.35)
+                    : AppColors.warning.withValues(alpha: 0.35),
+              ),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF10B981),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.check_rounded, color: Colors.white, size: 24),
-                  ),
+                Icon(
+                  abnormal == 0
+                      ? Icons.check_circle_rounded
+                      : Icons.warning_amber_rounded,
+                  color: abnormal == 0 ? AppColors.success : AppColors.warning,
+                  size: 28,
                 ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Overall Result\nLooks Good!',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF065F46),
-                          height: 1.2,
-                        ),
-                      ),
-                      SizedBox(height: 6),
-                      Text(
-                        'Your blood parameters are within normal range. Keep maintaining a healthy lifestyle!',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF047857),
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // 2. Key Insights Section Header
-          const Text(
-            'Key Insights',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // Insight 1: Hemoglobin
-          _buildInsightCard(
-            title: 'Hemoglobin',
-            valueText: 'Normal (13.8 g/dL)',
-            statusDetail: 'Optimal range',
-            icon: Icons.shield_outlined,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ParameterTrendScreen(parameterName: 'Hemoglobin'),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-
-          // Insight 2: WBC Count
-          _buildInsightCard(
-            title: 'WBC Count',
-            valueText: 'Normal (6,200 /μL)',
-            statusDetail: 'No signs of infection',
-            icon: Icons.shield_outlined,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ParameterTrendScreen(parameterName: 'White Blood Cell (WBC)'),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 10),
-
-          // Insight 3: Platelet Count
-          _buildInsightCard(
-            title: 'Platelet Count',
-            valueText: 'Normal (2.5 lakh/μL)',
-            statusDetail: 'Within healthy range',
-            icon: Icons.shield_outlined,
-            onTap: () {},
-          ),
-          const SizedBox(height: 24),
-
-          // 3. AI Suggestion Card matching Screen 4
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F3FF),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFDDD6FE)),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.auto_awesome_rounded, color: Color(0xFF8B5CF6), size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'AI Suggestion',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF6D28D9),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Your results look stable. Maintain a balanced diet, regular exercise and stay hydrated.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Color(0xFF5B21B6),
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInsightCard({
-    required String title,
-    required String valueText,
-    required String statusDetail,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFECFDF5),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.shield_rounded, color: Color(0xFF10B981), size: 20),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      valueText,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF10B981),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      statusDetail,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.more_vert_rounded, color: AppColors.textMuted, size: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ─── TAB 3: DIET PLAN MATCHING SCREEN 5 ───
-  Widget _buildDietPlanTab(BuildContext context, MedicalReport report) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          const Text(
-            'Personalized Diet Plan',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Based on your test results and health goals.',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Filter pills matching Screen 5
-          Row(
-            children: [
-              _buildDietFilterPill('Daily Plan'),
-              const SizedBox(width: 8),
-              _buildDietFilterPill('Foods to Include'),
-              const SizedBox(width: 8),
-              _buildDietFilterPill('Foods to Avoid'),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Meal 1: Breakfast
-          _buildMealCard(
-            mealName: 'Breakfast',
-            menu: 'Oats with fruits, nuts\n+ Green tea',
-            foodIcon: Icons.breakfast_dining_rounded,
-            color: const Color(0xFFF59E0B),
-          ),
-          const SizedBox(height: 12),
-
-          // Meal 2: Lunch
-          _buildMealCard(
-            mealName: 'Lunch',
-            menu: 'Brown rice, grilled chicken,\nsalad, vegetables',
-            foodIcon: Icons.lunch_dining_rounded,
-            color: const Color(0xFF10B981),
-          ),
-          const SizedBox(height: 12),
-
-          // Meal 3: Evening
-          _buildMealCard(
-            mealName: 'Evening',
-            menu: 'Fruits / sprouts\n+ Herbal tea',
-            foodIcon: Icons.bakery_dining_rounded,
-            color: const Color(0xFFEC4899),
-          ),
-          const SizedBox(height: 12),
-
-          // Meal 4: Dinner
-          _buildMealCard(
-            mealName: 'Dinner',
-            menu: 'Dal, vegetables, roti\n+ Curd',
-            foodIcon: Icons.dinner_dining_rounded,
-            color: const Color(0xFF3B82F6),
-          ),
-          const SizedBox(height: 20),
-
-          // Nutrition Tip Card matching Screen 5
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFECFDF5),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFA7F3D0)),
-            ),
-            child: const Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(Icons.eco_rounded, color: Color(0xFF10B981), size: 20),
-                SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Nutrition Tip',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF065F46),
+                        abnormal == 0
+                            ? 'All extracted values are in range'
+                            : '$abnormal value${abnormal == 1 ? '' : 's'} need review',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 7),
                       Text(
-                        'Include iron-rich foods like spinach, beetroot, and legumes to maintain healthy hemoglobin levels.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF047857),
-                          height: 1.4,
+                        report.summaryPlainLanguage,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          color: AppColors.textSecondary,
+                          height: 1.45,
                         ),
                       ),
                     ],
@@ -582,37 +305,386 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen>
               ],
             ),
           ),
-          const SizedBox(height: 24),
+        if (report.parameters.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          const Text(
+            'Report Parameters',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          ...report.parameters.map(_analysisParameterCard),
+        ],
+        if (report.questionsForDoctor.isNotEmpty) ...[
+          const SizedBox(height: 22),
+          const Text(
+            'Questions for your doctor',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 10),
+          _card(
+            child: Column(
+              children: report.questionsForDoctor
+                  .map(
+                    (question) => Padding(
+                      padding: const EdgeInsets.only(bottom: 11),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.help_outline_rounded,
+                            color: AppColors.primary,
+                            size: 19,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              question,
+                              style: const TextStyle(height: 1.35),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+        const SizedBox(height: 18),
+        const SafetyDisclaimerBanner(compact: true),
+      ],
+    );
+  }
+
+  Widget _buildDietPlanTab(MedicalReport report, bool isAnalyzing) {
+    final plan = report.effectiveDietPlan;
+    if (plan == null) {
+      return ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _analysisEmptyState(
+            report,
+            isAnalyzing,
+            message:
+                'A diet plan is created only after biomarkers are extracted from this report. It will be linked to the actual findings, not a preset category plan.',
+          ),
+          const SizedBox(height: 18),
+          const SafetyDisclaimerBanner(compact: true),
+        ],
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          plan.title,
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          plan.rationale,
+          style: const TextStyle(
+            fontSize: 12.5,
+            color: AppColors.textSecondary,
+            height: 1.45,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            _dietFilter('Daily Plan'),
+            const SizedBox(width: 7),
+            _dietFilter('Foods to Include'),
+            const SizedBox(width: 7),
+            _dietFilter('Foods to Avoid'),
+          ],
+        ),
+        const SizedBox(height: 18),
+        if (_selectedDietFilter == 'Daily Plan')
+          ...plan.dailyMeals.asMap().entries.map(
+                (entry) => _mealCard(entry.value, entry.key),
+              )
+        else if (_selectedDietFilter == 'Foods to Include')
+          _foodList(
+            plan.foodsToEat,
+            icon: Icons.check_circle_outline_rounded,
+            color: AppColors.success,
+          )
+        else
+          _foodList(
+            plan.foodsToAvoid,
+            icon: Icons.do_not_disturb_alt_rounded,
+            color: AppColors.error,
+          ),
+        const SizedBox(height: 18),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.successSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: AppColors.success.withValues(alpha: 0.35),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.eco_rounded, color: AppColors.success),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Nutrition tip',
+                      style: TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      plan.nutritionTip,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const SafetyDisclaimerBanner(compact: true),
+      ],
+    );
+  }
+
+  Widget _analysisEmptyState(
+    MedicalReport report,
+    bool isAnalyzing, {
+    String? message,
+  }) {
+    final statusMessage = switch (report.analysisStatus) {
+      ReportAnalysisStatus.failed =>
+        'Analysis could not be completed. The original document is still stored safely.',
+      ReportAnalysisStatus.noValuesFound =>
+        'No supported biomarkers were detected. Use a clear, upright lab report and verify that values and reference ranges are visible.',
+      _ =>
+        'No structured biomarkers are available yet. Analyze the original document to extract supported lab values.',
+    };
+    return _card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(
+                Icons.document_scanner_outlined,
+                color: AppColors.textMuted,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message ?? statusMessage,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (report.hasDocument) ...[
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: Key('analyze-report-${report.id}'),
+                onPressed: isAnalyzing ? null : () => _analyzeReport(report),
+                icon: isAnalyzing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.auto_awesome_rounded),
+                label: Text(isAnalyzing ? 'Analyzing…' : 'Analyze Report'),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 
-  Widget _buildDietFilterPill(String label) {
-    final isSelected = _selectedDietFilter == label;
+  Future<void> _analyzeReport(MedicalReport report) async {
+    final success =
+        await ref.read(reportsProvider.notifier).analyzeReport(report.id);
+    if (!mounted) return;
+    final refreshed = ref
+        .read(reportsProvider)
+        .reports
+        .where((item) => item.id == report.id)
+        .firstOrNull;
+    final foundValues = refreshed?.parameters.isNotEmpty ?? false;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          success
+              ? foundValues
+                  ? 'Report analyzed and saved.'
+                  : 'Analysis finished, but no supported biomarkers were found.'
+              : 'Analysis failed. Check the document and try again.',
+        ),
+      ),
+    );
+  }
+
+  Widget _card({required Widget child}) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: child,
+      );
+
+  Widget _metadataRow(IconData icon, String text) => Row(
+        children: [
+          Icon(icon, size: 17, color: AppColors.textMuted),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 12.5,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      );
+
+  Widget _pill(String text, Color color, Color background) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: color,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
+
+  Widget _parameterRow(TestParameter parameter) => Container(
+        margin: const EdgeInsets.only(bottom: 9),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    parameter.name,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    'Reference: ${parameter.minNormal}–${parameter.maxNormal} ${parameter.unit}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              '${parameter.value} ${parameter.unit}',
+              style: TextStyle(
+                fontWeight: FontWeight.w900,
+                color: TrendCalculator.getStatusColor(parameter.status),
+              ),
+            ),
+          ],
+        ),
+      );
+
+  Widget _analysisParameterCard(TestParameter parameter) => Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: ListTile(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ParameterTrendScreen(
+                parameterName: parameter.name,
+              ),
+            ),
+          ),
+          leading: CircleAvatar(
+            backgroundColor: TrendCalculator.getStatusColor(parameter.status)
+                .withValues(alpha: 0.12),
+            child: Icon(
+              Icons.monitor_heart_outlined,
+              color: TrendCalculator.getStatusColor(parameter.status),
+            ),
+          ),
+          title: Text(
+            parameter.name,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+          subtitle: Text(
+            '${parameter.value} ${parameter.unit} • ${TrendCalculator.getStatusLabel(parameter.status)}',
+          ),
+          trailing: const Icon(Icons.chevron_right_rounded),
+        ),
+      );
+
+  Widget _dietFilter(String label) {
+    final selected = _selectedDietFilter == label;
     return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          setState(() {
-            _selectedDietFilter = label;
-          });
-        },
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
+      child: InkWell(
+        key: Key('diet-filter-$label'),
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => setState(() => _selectedDietFilter = label),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 3),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : Colors.white,
+            color: selected ? AppColors.primary : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
+              color: selected ? AppColors.primary : AppColors.border,
             ),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 11,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              color: selected ? Colors.white : AppColors.textSecondary,
             ),
           ),
         ),
@@ -620,13 +692,23 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen>
     );
   }
 
-  Widget _buildMealCard({
-    required String mealName,
-    required String menu,
-    required IconData foodIcon,
-    required Color color,
-  }) {
+  Widget _mealCard(DietMeal meal, int index) {
+    const colors = [
+      AppColors.accentAmber,
+      AppColors.success,
+      AppColors.accentRose,
+      AppColors.accentBlue,
+    ];
+    const icons = [
+      Icons.breakfast_dining_rounded,
+      Icons.lunch_dining_rounded,
+      Icons.bakery_dining_rounded,
+      Icons.dinner_dining_rounded,
+    ];
+    final color = colors[index % colors.length];
     return Container(
+      key: Key('diet-meal-${meal.mealType}'),
+      margin: const EdgeInsets.only(bottom: 11),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -634,44 +716,77 @@ class _ReportDetailsScreenState extends State<ReportDetailsScreen>
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  mealName,
+                  meal.mealType,
                   style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 5),
                 Text(
-                  menu,
+                  meal.recommendedFood,
                   style: const TextStyle(
-                    fontSize: 12,
                     color: AppColors.textSecondary,
                     height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  meal.nutrition,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],
             ),
           ),
-          // Food photo circle placeholder matching Screen 5
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
-              shape: BoxShape.circle,
-              border: Border.all(color: color.withValues(alpha: 0.3)),
-            ),
-            child: Icon(foodIcon, color: color, size: 26),
+          const SizedBox(width: 10),
+          CircleAvatar(
+            radius: 27,
+            backgroundColor: color.withValues(alpha: 0.12),
+            child: Icon(icons[index % icons.length], color: color),
           ),
         ],
       ),
     );
   }
+
+  Widget _foodList(
+    List<String> foods, {
+    required IconData icon,
+    required Color color,
+  }) =>
+      _card(
+        child: Column(
+          children: foods
+              .map(
+                (food) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(icon, color: color, size: 21),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          food,
+                          style: const TextStyle(height: 1.35),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      );
 }
