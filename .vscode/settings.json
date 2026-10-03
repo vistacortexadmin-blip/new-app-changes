@@ -1,15 +1,4 @@
 {
-  "dart.showTodos": false,
-  "dart.flutterHotReloadOnSave": "always",
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "Dart-Code.dart-code",
-  "[dart]": {
-    "editor.formatOnSave": true,
-    "editor.formatOnType": true,
-    "editor.selectionHighlight": false,
-    "editor.suggest.snippetsPreventQuickSuggestions": false,
-    "editor.suggestSelection": "first",
-    "editor.tabCompletion": "onlySnippets",
-    "editor.wordBasedSuggestions": "off"
-  }
+    "dart.showTodos": false,
+    "java.configuration.updateBuildConfiguration": "interactive"
 }

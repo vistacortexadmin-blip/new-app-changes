@@ -52,6 +52,7 @@ class MedicineReminder {
   final int dailyDoseCount;
   final DateTime startDate;
   final int durationDays;
+  final String? warning;
 
   MedicineReminder({
     required this.id,
@@ -64,10 +65,11 @@ class MedicineReminder {
     required this.dailyDoseCount,
     required this.startDate,
     required this.durationDays,
+    this.warning,
   });
 
   int get daysOfSupplyRemaining {
-    if (dailyDoseCount <= 0) return 0;
+    if (dailyDoseCount <= 0) return 999; // Not applicable
     return (totalQuantityAvailable / dailyDoseCount).floor();
   }
 
@@ -79,20 +81,30 @@ class MedicineReminder {
   bool get isCriticalSupply => daysOfSupplyRemaining <= 2;
 
   MedicineReminder copyWith({
+    String? id,
+    String? medicineName,
+    String? dosage,
+    String? instructions,
+    String? prescribedFor,
     List<DoseSchedule>? dailySchedules,
     int? totalQuantityAvailable,
+    int? dailyDoseCount,
+    DateTime? startDate,
+    int? durationDays,
+    String? warning,
   }) {
     return MedicineReminder(
-      id: id,
-      medicineName: medicineName,
-      dosage: dosage,
-      instructions: instructions,
-      prescribedFor: prescribedFor,
+      id: id ?? this.id,
+      medicineName: medicineName ?? this.medicineName,
+      dosage: dosage ?? this.dosage,
+      instructions: instructions ?? this.instructions,
+      prescribedFor: prescribedFor ?? this.prescribedFor,
       dailySchedules: dailySchedules ?? this.dailySchedules,
       totalQuantityAvailable: totalQuantityAvailable ?? this.totalQuantityAvailable,
-      dailyDoseCount: dailyDoseCount,
-      startDate: startDate,
-      durationDays: durationDays,
+      dailyDoseCount: dailyDoseCount ?? this.dailyDoseCount,
+      startDate: startDate ?? this.startDate,
+      durationDays: durationDays ?? this.durationDays,
+      warning: warning ?? this.warning,
     );
   }
 }
@@ -117,9 +129,9 @@ class NextTestReminder {
   });
 
   int get daysUntilTest {
-    final now = DateTime.now();
-    final difference = scheduledDate.difference(DateTime(now.year, now.month, now.day)).inDays;
-    return difference;
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final testDay = DateTime(scheduledDate.year, scheduledDate.month, scheduledDate.day);
+    return testDay.difference(today).inDays;
   }
 
   bool get isOverdue => daysUntilTest < 0 && !isCompleted;
