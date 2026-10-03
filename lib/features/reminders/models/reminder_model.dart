@@ -69,7 +69,7 @@ class MedicineReminder {
   });
 
   int get daysOfSupplyRemaining {
-    if (dailyDoseCount <= 0) return 0;
+    if (dailyDoseCount <= 0) return 999; // Not applicable
     return (totalQuantityAvailable / dailyDoseCount).floor();
   }
 
@@ -129,9 +129,9 @@ class NextTestReminder {
   });
 
   int get daysUntilTest {
-    final now = DateTime.now();
-    final difference = scheduledDate.difference(DateTime(now.year, now.month, now.day)).inDays;
-    return difference;
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final testDay = DateTime(scheduledDate.year, scheduledDate.month, scheduledDate.day);
+    return testDay.difference(today).inDays;
   }
 
   bool get isOverdue => daysUntilTest < 0 && !isCompleted;

@@ -18,9 +18,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(reportsProvider);
     final reports = state.reports;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+    final borderColor = isDark ? const Color(0xFF334155) : AppColors.border;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,7 +37,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -41,16 +46,16 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w900,
-                            color: AppColors.textPrimary,
+                            color: textColor,
                             letterSpacing: -0.5,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
                           'Store, organize and access all your\nmedical reports in one place.',
                           style: TextStyle(
                             fontSize: 13,
-                            color: AppColors.textSecondary,
+                            color: textSecondary,
                             height: 1.3,
                           ),
                         ),
@@ -82,25 +87,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             ),
             const SizedBox(height: 10),
 
-            // 2. Category Filter Chips matching Screen 3
+            // 2. Category Filter Chips
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  _buildFilterChip('All'),
+                  _buildFilterChip('All', isDark, cardBg, borderColor, textSecondary),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Blood Test'),
+                  _buildFilterChip('Blood Test', isDark, cardBg, borderColor, textSecondary),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Imaging'),
+                  _buildFilterChip('Imaging', isDark, cardBg, borderColor, textSecondary),
                   const SizedBox(width: 8),
-                  _buildFilterChip('Others'),
+                  _buildFilterChip('Others', isDark, cardBg, borderColor, textSecondary),
                 ],
               ),
             ),
             const SizedBox(height: 14),
 
-            // 3. Reports List matching Screen 3
+            // 3. Reports List
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
@@ -111,9 +116,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     date: '12 Aug 2025',
                     icon: Icons.picture_as_pdf_rounded,
                     iconColor: const Color(0xFFEF4444),
-                    iconBgColor: const Color(0xFFFEE2E2),
+                    iconBgColor: isDark ? const Color(0xFF4C1D1D) : const Color(0xFFFEE2E2),
                     badgeText: 'Normal',
                     isSuccessBadge: true,
+                    cardBg: cardBg,
+                    textColor: textColor,
+                    textSecondary: textSecondary,
+                    borderColor: borderColor,
+                    isDark: isDark,
                     onTap: () {
                       if (reports.isNotEmpty) {
                         Navigator.push(
@@ -131,9 +141,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     date: '05 Jul 2025',
                     icon: Icons.personal_injury_rounded,
                     iconColor: const Color(0xFF2563EB),
-                    iconBgColor: const Color(0xFFEFF6FF),
+                    iconBgColor: isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF),
                     badgeText: 'View',
                     isSuccessBadge: false,
+                    cardBg: cardBg,
+                    textColor: textColor,
+                    textSecondary: textSecondary,
+                    borderColor: borderColor,
+                    isDark: isDark,
                     onTap: () {
                       if (reports.length > 1) {
                         Navigator.push(
@@ -146,25 +161,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     },
                   ),
                   _buildReportTile(
-                    title: 'X-Ray - Chest',
-                    hospital: 'Care Hospitals',
-                    date: '20 Jun 2025',
-                    icon: Icons.assignment_outlined,
-                    iconColor: const Color(0xFFF97316),
-                    iconBgColor: const Color(0xFFFFF7ED),
-                    badgeText: 'View',
-                    isSuccessBadge: false,
-                    onTap: () {},
-                  ),
-                  _buildReportTile(
                     title: 'Lipid Profile',
-                    hospital: 'Apollo Hospitals',
-                    date: '10 May 2025',
-                    icon: Icons.insert_drive_file_outlined,
-                    iconColor: const Color(0xFF10B981),
-                    iconBgColor: const Color(0xFFECFDF5),
+                    hospital: 'AIG Hospitals',
+                    date: '20 May 2025',
+                    icon: Icons.biotech_rounded,
+                    iconColor: const Color(0xFF0D9488),
+                    iconBgColor: isDark ? const Color(0xFF134E4A) : const Color(0xFFCCFBF1),
                     badgeText: 'Normal',
                     isSuccessBadge: true,
+                    cardBg: cardBg,
+                    textColor: textColor,
+                    textSecondary: textSecondary,
+                    borderColor: borderColor,
+                    isDark: isDark,
                     onTap: () {
                       if (reports.isNotEmpty) {
                         Navigator.push(
@@ -176,17 +185,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       }
                     },
                   ),
-                  _buildReportTile(
-                    title: 'Thyroid Test',
-                    hospital: 'MedPlus Diagnostics',
-                    date: '26 Apr 2025',
-                    icon: Icons.science_outlined,
-                    iconColor: const Color(0xFF8B5CF6),
-                    iconBgColor: const Color(0xFFF5F3FF),
-                    badgeText: 'View',
-                    isSuccessBadge: false,
-                    onTap: () {},
-                  ),
                   const SizedBox(height: 24),
                 ],
               ),
@@ -197,7 +195,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     );
   }
 
-  Widget _buildFilterChip(String label) {
+  Widget _buildFilterChip(
+    String label,
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+    Color textSecondary,
+  ) {
     final isSelected = _selectedFilter == label;
     return GestureDetector(
       onTap: () {
@@ -208,10 +212,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
+          color: isSelected ? AppColors.primary : cardBg,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.primary : borderColor,
           ),
           boxShadow: isSelected
               ? [
@@ -228,7 +232,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected ? Colors.white : textSecondary,
           ),
         ),
       ),
@@ -244,60 +248,65 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     required Color iconBgColor,
     required String badgeText,
     required bool isSuccessBadge,
+    required Color cardBg,
+    required Color textColor,
+    required Color textSecondary,
+    required Color borderColor,
+    required bool isDark,
     required VoidCallback onTap,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: borderColor),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               // Icon container
               Container(
-                width: 44,
-                height: 44,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   color: iconBgColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
-                child: Icon(icon, color: iconColor, size: 22),
+                child: Icon(icon, color: iconColor, size: 24),
               ),
               const SizedBox(width: 14),
 
-              // Title & hospital & date
+              // Title and metadata
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w800,
+                        color: textColor,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
-                      '$hospital • $date',
-                      style: const TextStyle(
+                      '$hospital · $date',
+                      style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: textSecondary,
                       ),
                     ),
                   ],
@@ -308,10 +317,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isSuccessBadge ? const Color(0xFFECFDF5) : const Color(0xFFEFF6FF),
+                  color: isSuccessBadge
+                      ? (isDark ? const Color(0xFF064E3B) : const Color(0xFFECFDF5))
+                      : (isDark ? const Color(0xFF1E3A5F) : const Color(0xFFEFF6FF)),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSuccessBadge ? const Color(0xFFA7F3D0) : const Color(0xFFBFDBFE),
+                    color: isSuccessBadge
+                        ? (isDark ? const Color(0xFF059669) : const Color(0xFFA7F3D0))
+                        : (isDark ? const Color(0xFF2563EB) : const Color(0xFFBFDBFE)),
                   ),
                 ),
                 child: Text(
@@ -326,7 +339,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               const SizedBox(width: 6),
 
               // Three dots menu
-              const Icon(Icons.more_vert_rounded, color: AppColors.textMuted, size: 20),
+              Icon(Icons.more_vert_rounded, color: textSecondary, size: 20),
             ],
           ),
         ),
@@ -335,9 +348,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
   }
 
   void _showUploadDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final surfaceColor = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final textColor = isDark ? const Color(0xFFF1F5F9) : AppColors.textPrimary;
+    final textSecondary = isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: surfaceColor,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -348,27 +366,27 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Upload Report',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textColor),
               ),
               const SizedBox(height: 8),
-              const Text(
+              Text(
                 'Upload a PDF or take a photo of your paper test report.',
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: TextStyle(fontSize: 13, color: textSecondary),
               ),
               const SizedBox(height: 20),
               ListTile(
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: isDark ? const Color(0xFF1E3A5F) : AppColors.primarySurface,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.picture_as_pdf_rounded, color: AppColors.primary),
                 ),
-                title: const Text('Choose PDF Document', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                subtitle: const Text('From your device storage', style: TextStyle(fontSize: 12)),
+                title: Text('Choose PDF Document', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
+                subtitle: Text('From your device storage', style: TextStyle(fontSize: 12, color: textSecondary)),
                 onTap: () {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -380,13 +398,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primarySurface,
+                    color: isDark ? const Color(0xFF1E3A5F) : AppColors.primarySurface,
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary),
                 ),
-                title: const Text('Capture with Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                subtitle: const Text('Take a photo of physical report sheet', style: TextStyle(fontSize: 12)),
+                title: Text('Capture with Camera', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: textColor)),
+                subtitle: Text('Take a photo of physical report sheet', style: TextStyle(fontSize: 12, color: textSecondary)),
                 onTap: () {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(

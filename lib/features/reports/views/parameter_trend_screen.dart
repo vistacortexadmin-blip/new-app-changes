@@ -85,7 +85,7 @@ class ParameterTrendScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: TrendCalculator.getStatusColor(status).withOpacity(0.12),
+                              color: TrendCalculator.getStatusColor(status).withValues(alpha: 0.12),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -141,7 +141,7 @@ class ParameterTrendScreen extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: TrendCalculator.getStatusColor(status).withOpacity(0.15),
+                                  color: TrendCalculator.getStatusColor(status).withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: Text(
@@ -176,7 +176,7 @@ class ParameterTrendScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         color: AppColors.primarySurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,

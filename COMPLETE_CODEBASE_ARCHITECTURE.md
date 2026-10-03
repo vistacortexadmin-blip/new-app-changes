@@ -4,11 +4,13 @@ This document provides an exhaustive, production-grade guide to the **VistaCorte
 
 ---
 
+"test"
+
 ## 1. High-Level Architecture & Design Patterns
 
-### Architecture Pattern: Feature-First Clean Architecture
+### Architecture Pattern: Feature-First Clean Architecture 
 The application is structured into decoupled, self-contained feature slices (`lib/features/`) alongside shared foundational utilities (`lib/core/`).
-
+..............
 ```mermaid
 graph TD
     A["UI Layer (views/)<br/>ConsumerWidget / ConsumerStatefulWidget"] -->|watches & calls| B["State Management Layer (providers/)<br/>StateNotifier / StateNotifierProvider"]

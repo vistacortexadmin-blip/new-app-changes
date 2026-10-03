@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 import '../../../core/config/app_colors.dart';
 import '../models/reminder_model.dart';
 import '../providers/reminders_provider.dart';
@@ -31,7 +32,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,7 +45,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Column(
+                  Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
@@ -52,16 +53,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                         style: TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
+                          color: Theme.of(context).colorScheme.onSurface,
                           letterSpacing: -0.5,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
                         'Stay on track with your health.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: AppColors.textSecondary,
+                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                     ],
@@ -81,8 +82,14 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       ],
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.add, color: Colors.white, size: 24),
-                      onPressed: () => _showAddActionSheet(context),
+                      icon: Icon(Icons.add, color: Theme.of(context).cardColor, size: 24),
+                      onPressed: () {
+                        if (_tabController.index == 2) {
+                          _showAddTestModal(context);
+                        } else {
+                          _showAddMedicineModal(context);
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -94,7 +101,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             TabBar(
               controller: _tabController,
               labelColor: AppColors.primary,
-              unselectedLabelColor: AppColors.textSecondary,
+              unselectedLabelColor: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
               indicatorColor: AppColors.primary,
               tabs: const [
                 Tab(text: 'Doses'),
@@ -110,7 +117,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 children: [
                   _buildDailyDosesTab(context),
                   _buildRefillSupplyTab(context),
-                  _buildUpcomingTestsTab(context),
+                  _buildTestsTab(context),
                 ],
               ),
             ),
@@ -137,9 +144,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: Theme.of(context).dividerColor),
           ),
           child: Row(
             children: [
@@ -152,7 +159,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     CircularProgressIndicator(
                       value: adherence,
                       strokeWidth: 6,
-                      backgroundColor: AppColors.border,
+                      strokeCap: StrokeCap.round,
+                      backgroundColor: Theme.of(context).dividerColor,
                       valueColor: AlwaysStoppedAnimation<Color>(
                         adherence >= 0.8
                             ? AppColors.success
@@ -172,7 +180,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -181,15 +189,15 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
-                    SizedBox(height: 4),
+                    const SizedBox(height: 4),
                     Text(
                       'Keep up the great work! Consistency is key.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -246,10 +254,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
+          color: isSelected ? AppColors.primary : Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
+            color: isSelected ? AppColors.primary : Theme.of(context).dividerColor,
           ),
         ),
         child: Text(
@@ -257,7 +265,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           style: TextStyle(
             fontSize: 13,
             fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            color: isSelected ? Colors.white : AppColors.textSecondary,
+            color: isSelected ? Colors.white : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
           ),
         ),
       ),
@@ -305,9 +313,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: Theme.of(context).dividerColor),
       ),
       child: Column(
         children: [
@@ -317,7 +325,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.medication_rounded,
@@ -330,18 +338,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   children: [
                     Text(
                       med.medicineName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
+                      style: TextStyle(fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       med.dosage,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
+                      style: TextStyle(fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -409,8 +415,8 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
               padding: const EdgeInsets.symmetric(vertical: 8),
               decoration: BoxDecoration(
                 color: isTaken
-                    ? AppColors.successSurface
-                    : AppColors.warningSurface,
+                    ? AppColors.success.withValues(alpha: 0.1)
+                    : AppColors.warning.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
@@ -461,14 +467,16 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             ),
             ElevatedButton(
               onPressed: () {
-                ref.read(remindersProvider.notifier).markDoseSkipped(
-                      medicineId: medId,
-                      timeOfDay: timeOfDay,
-                      reason: controller.text.isNotEmpty
-                          ? controller.text
-                          : 'Patient elected to skip',
-                    );
                 Navigator.pop(context);
+                Future.microtask(() {
+                  ref.read(remindersProvider.notifier).markDoseSkipped(
+                        medicineId: medId,
+                        timeOfDay: timeOfDay,
+                        reason: controller.text.isNotEmpty
+                            ? controller.text
+                            : 'Patient elected to skip',
+                      );
+                });
               },
               child: const Text('Submit'),
             ),
@@ -479,198 +487,21 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
   }
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Action Sheet (Choose Medicine or Test)
-  // ──────────────────────────────────────────────────────────────────────────
-
-  void _showAddActionSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'What would you like to add?',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
-                ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: AppColors.primarySurface,
-                    child: Icon(Icons.medication, color: AppColors.primary),
-                  ),
-                  title: const Text('Add Medicine Reminder'),
-                  subtitle: const Text('Schedule a pill, syrup, or injection'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showAddMedicineModal(context);
-                  },
-                ),
-                const Divider(),
-                ListTile(
-                  leading: const CircleAvatar(
-                    backgroundColor: AppColors.infoSurface,
-                    child: Icon(Icons.science, color: AppColors.info),
-                  ),
-                  title: const Text('Schedule Diagnostic Test'),
-                  subtitle: const Text('Add a lab test, scan, or checkup'),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showAddTestModal(context);
-                  },
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
-  // Add Test Modal
-  // ──────────────────────────────────────────────────────────────────────────
-
-  void _showAddTestModal(BuildContext context) {
-    final nameController = TextEditingController();
-    final labController = TextEditingController();
-    final prepController = TextEditingController();
-    DateTime selectedDate = DateTime.now().add(const Duration(days: 7));
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24,
-                right: 24,
-                top: 24,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Schedule Test',
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameController,
-                    decoration:
-                        const InputDecoration(labelText: 'Test Name (e.g. Blood Test)'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: labController,
-                    decoration: const InputDecoration(
-                        labelText: 'Clinic / Lab Name'),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: prepController,
-                    decoration: const InputDecoration(
-                        labelText: 'Preparation (e.g. 12h fasting)'),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Text('When?  ', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: selectedDate,
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 365)),
-                            );
-                            if (picked != null) {
-                              setModalState(() {
-                                selectedDate = picked;
-                              });
-                            }
-                          },
-                          icon: const Icon(Icons.calendar_month),
-                          label: Text(
-                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        if (nameController.text.isEmpty) {
-                          return;
-                        }
-
-                        final test = NextTestReminder(
-                          id: const Uuid().v4(),
-                          testName: nameController.text,
-                          labOrClinicName: labController.text.isEmpty ? 'TBD Clinic' : labController.text,
-                          scheduledDate: selectedDate,
-                          preparationInstructions: prepController.text,
-                          isCompleted: false,
-                        );
-
-                        ref
-                            .read(remindersProvider.notifier)
-                            .addNextTestReminder(test);
-
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Diagnostic test scheduled!')),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.info,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Save Test'),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  // ──────────────────────────────────────────────────────────────────────────
   // Add Medicine Modal
   // ──────────────────────────────────────────────────────────────────────────
 
-  void _showAddMedicineModal(BuildContext context) {
+  void _showAddMedicineModal(BuildContext context) async {
     final nameController = TextEditingController();
     final dosageController = TextEditingController();
-    final timeController = TextEditingController();
-    final totalPillsController = TextEditingController(text: '30');
-    final pillsPerDayController = TextEditingController(text: '1');
-    DoseTimeOfDay selectedTime = DoseTimeOfDay.morning;
+    final supplyController = TextEditingController();
+    Map<DoseTimeOfDay, TimeOfDay> selectedDoses = {
+      DoseTimeOfDay.morning: const TimeOfDay(hour: 8, minute: 0)
+    };
+    DateTime selectedDate = DateTime.now();
 
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -706,97 +537,123 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           labelText: 'Dosage (e.g., 500mg)'),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: totalPillsController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                                labelText: 'Total Pills Box'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: pillsPerDayController,
-                            keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(
-                                labelText: 'Pills Per Day'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
                     TextField(
-                      controller: timeController,
+                      controller: supplyController,
+                      keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                          labelText: 'Time (e.g. 08:00 AM)'),
+                          labelText: 'Total Supply/Pills (e.g., 30)'),
                     ),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<DoseTimeOfDay>(
-                      initialValue: selectedTime,
-                      decoration:
-                          const InputDecoration(labelText: 'Time of Day'),
-                      items: DoseTimeOfDay.values.map((time) {
-                        return DropdownMenuItem(
-                          value: time,
-                          child: Text(time.toString().split('.').last),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text('Start Date: ${selectedDate.toLocal().toString().split(' ')[0]}'),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: selectedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
                         );
-                      }).toList(),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setModalState(() => selectedTime = val);
+                        if (date != null) {
+                          setModalState(() => selectedDate = date);
                         }
                       },
+                    ),
+                    const SizedBox(height: 12),
+                    const Text('Times of Day', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: DoseTimeOfDay.values.map((time) {
+                        final isSelected = selectedDoses.containsKey(time);
+                        return FilterChip(
+                          label: Text(time.name),
+                          selected: isSelected,
+                          onSelected: (selected) {
+                            setModalState(() {
+                              if (selected) {
+                                if (time == DoseTimeOfDay.morning) {
+                                  selectedDoses[time] = const TimeOfDay(hour: 8, minute: 0);
+                                } else if (time == DoseTimeOfDay.afternoon) {
+                                  selectedDoses[time] = const TimeOfDay(hour: 13, minute: 0);
+                                } else if (time == DoseTimeOfDay.evening) {
+                                  selectedDoses[time] = const TimeOfDay(hour: 20, minute: 0);
+                                } else {
+                                  selectedDoses[time] = const TimeOfDay(hour: 22, minute: 0);
+                                }
+                              } else {
+                                if (selectedDoses.length > 1) {
+                                  selectedDoses.remove(time);
+                                }
+                              }
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 8),
+                    Column(
+                      children: selectedDoses.keys.map((time) {
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text('${time.name} Time: ${selectedDoses[time]!.format(context)}'),
+                          trailing: const Icon(Icons.access_time),
+                          onTap: () async {
+                            final pickedTime = await showTimePicker(
+                              context: context,
+                              initialTime: selectedDoses[time]!,
+                            );
+                            if (pickedTime != null) {
+                              setModalState(() {
+                                selectedDoses[time] = pickedTime;
+                              });
+                            }
+                          },
+                        );
+                      }).toList(),
                     ),
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          if (nameController.text.isEmpty ||
-                              timeController.text.isEmpty) {
-                            return;
+                          if (nameController.text.isEmpty || selectedDoses.isEmpty) {
+                            return; // Silently return if invalid to avoid context crashes
                           }
-  
-                          int totalPills = int.tryParse(totalPillsController.text) ?? 30;
-                          int dailyDose = int.tryParse(pillsPerDayController.text) ?? 1;
-  
+
                           final reminder = MedicineReminder(
                             id: const Uuid().v4(),
                             medicineName: nameController.text,
                             dosage: dosageController.text,
                             instructions: '',
                             prescribedFor: '',
-                            dailySchedules: [
-                              DoseSchedule(
-                                timeOfDay: selectedTime,
-                                timeString: timeController.text,
-                              )
-                            ],
-                            totalQuantityAvailable: totalPills,
-                            dailyDoseCount: dailyDose,
-                            startDate: DateTime.now(),
+                            dailySchedules: selectedDoses.entries.map((e) => DoseSchedule(
+                              timeOfDay: e.key,
+                              timeString: e.value.format(context),
+                            )).toList(),
+                            totalQuantityAvailable: int.tryParse(supplyController.text) ?? 30,
+                            dailyDoseCount: selectedDoses.length,
+                            startDate: selectedDate,
                             durationDays: 30,
                           );
 
-                        ref
-                            .read(remindersProvider.notifier)
-                            .addMedicineReminder(reminder);
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
 
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text('Reminder schedule saved!')),
-                        );
-                      },
-                      child: const Text('Save Reminder'),
+                          Future.microtask(() {
+                            ref
+                                .read(remindersProvider.notifier)
+                                .addMedicineReminder(reminder);
+                          });
+                        },
+                        child: const Text('Save Reminder'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             );
           },
         );
@@ -828,10 +685,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isLow ? AppColors.warning : AppColors.border,
+              color: isLow ? AppColors.warning : Theme.of(context).dividerColor,
               width: isLow ? 2 : 1,
             ),
           ),
@@ -844,39 +701,79 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   Expanded(
                     child: Text(
                       med.medicineName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
+                      style: TextStyle(fontWeight: FontWeight.w700,
                         fontSize: 16,
-                        color: AppColors.textPrimary,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isLow
-                          ? AppColors.warningSurface
-                          : AppColors.primarySurface,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$daysLeft Days Left',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color:
-                            isLow ? AppColors.warning : AppColors.primary,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isLow ? AppColors.warning.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '$daysLeft Days Left',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: isLow ? AppColors.warning : AppColors.primary,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Medicine?'),
+                              content: Text('Are you sure you want to permanently delete ${med.medicineName}? All its scheduled alarms will be cancelled.'),
+                              actions: [
+                                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    Future.microtask(() {
+                                      ref.read(remindersProvider.notifier).deleteMedicine(med.id);
+                                    });
+                                  }, 
+                                  child: const Text('Delete', style: TextStyle(color: Colors.red))
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(
-                'Current Stock: ${med.totalQuantityAvailable} pills',
-                style: const TextStyle(
-                    fontSize: 13, color: AppColors.textSecondary),
+              Row(
+                children: [
+                  Text(
+                    'Current Stock: ${med.totalQuantityAvailable} pills',
+                    style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6)),
+                  ),
+                  const SizedBox(width: 8),
+                  InkWell(
+                    onTap: () {
+                      _showEditStockModal(context, med);
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: const Padding(
+                      padding: EdgeInsets.all(4.0),
+                      child: Icon(Icons.edit, size: 16, color: AppColors.primary),
+                    ),
+                  ),
+                ],
               ),
               if (isLow) ...[
                 const SizedBox(height: 12),
@@ -884,14 +781,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      ref.read(remindersProvider.notifier).refillStock(
-                            medicineId: med.id,
-                            addedQuantity: 30,
-                          );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Ordered 30 day refill!')),
-                      );
+                      _showRefillModal(context, med);
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.warning,
@@ -900,7 +790,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    child: const Text('+30 Refill'),
+                    child: const Text('Refill Supply'),
                   ),
                 ),
               ],
@@ -911,175 +801,449 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
     );
   }
 
+  void _showRefillModal(BuildContext context, MedicineReminder med) {
+    int selectedAmount = 30;
+    final customController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Refill ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  Text('Select amount to add:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 12,
+                    children: [10, 30, 60, 90].map((amount) {
+                      return ChoiceChip(
+                        label: Text('+$amount', style: TextStyle(color: selectedAmount == amount ? Colors.white : AppColors.primary)),
+                        selectedColor: AppColors.primary,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        selected: selectedAmount == amount,
+                        onSelected: (selected) {
+                          if (selected) {
+                            setModalState(() {
+                              selectedAmount = amount;
+                              customController.clear();
+                            });
+                          }
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: customController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Or enter custom amount',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    onChanged: (val) {
+                      if (val.isNotEmpty) {
+                        setModalState(() {
+                          selectedAmount = int.tryParse(val) ?? 0;
+                        });
+                      } else {
+                        setModalState(() {
+                          selectedAmount = 30;
+                        });
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: selectedAmount <= 0 ? null : () {
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        }
+                        Future.microtask(() {
+                          ref.read(remindersProvider.notifier).refillStock(
+                            medicineId: med.id,
+                            addedQuantity: selectedAmount,
+                          );
+                        });
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text('Add $selectedAmount Pills', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showEditStockModal(BuildContext context, MedicineReminder med) {
+    final customController = TextEditingController(text: med.totalQuantityAvailable.toString());
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 24,
+            right: 24,
+            top: 24,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Edit Stock: ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Text('Enter the exact number of pills you currently have:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+              const SizedBox(height: 16),
+              TextField(
+                controller: customController,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                decoration: InputDecoration(
+                  labelText: 'Current Total Pills',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final exactAmount = int.tryParse(customController.text) ?? med.totalQuantityAvailable;
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
+                    Future.microtask(() {
+                      ref.read(remindersProvider.notifier).updateStock(
+                        medicineId: med.id,
+                        exactQuantity: exactAmount,
+                      );
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Save Stock', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // ──────────────────────────────────────────────────────────────────────────
-  // Tab 3: Upcoming Diagnostic Tests
+  // Tab 3: Tests
   // ──────────────────────────────────────────────────────────────────────────
 
-  Widget _buildUpcomingTestsTab(BuildContext context) {
+  Widget _buildTestsTab(BuildContext context) {
     final state = ref.watch(remindersProvider);
-    final tests = state.nextTests;
+    final upcomingTests = state.nextTests.where((test) => !test.isCompleted).toList();
 
-    if (tests.isEmpty) {
-      return const Center(child: Text('No upcoming diagnostic tests scheduled.'));
+    if (upcomingTests.isEmpty) {
+      return const Center(child: Text("No upcoming tests. Add one using the + button."));
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      itemCount: tests.length,
+      itemCount: upcomingTests.length,
       itemBuilder: (context, index) {
-        final test = tests[index];
-        final daysUntil = test.daysUntilTest;
-        final isCompleted = test.isCompleted;
+        final test = upcomingTests[index];
+        final formattedDate = DateFormat('MMM d, yyyy').format(test.scheduledDate);
+        
+        final now = DateTime.now();
+        final testDate = DateTime(test.scheduledDate.year, test.scheduledDate.month, test.scheduledDate.day);
+        final today = DateTime(now.year, now.month, now.day);
+        final daysUntil = testDate.difference(today).inDays;
+        
+        String daysUntilStr;
+        if (daysUntil < 0) {
+          daysUntilStr = "Overdue";
+        } else if (daysUntil == 0) {
+          daysUntilStr = "Today";
+        } else if (daysUntil == 1) {
+          daysUntilStr = "Tomorrow";
+        } else {
+          daysUntilStr = "In $daysUntil days";
+        }
 
-        return Container(
+        return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isCompleted
-                  ? AppColors.border
-                  : (test.isOverdue ? AppColors.error : AppColors.primary),
-              width: isCompleted ? 1 : 1.5,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      test.testName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Left Icon
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isCompleted
-                          ? AppColors.successSurface
-                          : (test.isOverdue
-                              ? AppColors.errorSurface
-                              : AppColors.primarySurface),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      isCompleted
-                          ? 'Completed'
-                          : (test.isOverdue
-                              ? 'Overdue'
-                              : 'In $daysUntil Days'),
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isCompleted
-                            ? AppColors.success
-                            : (test.isOverdue
-                                ? AppColors.error
-                                : AppColors.primary),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.location_on_outlined,
-                      size: 14, color: AppColors.textSecondary),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      test.labOrClinicName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
+                  child: const Icon(Icons.medical_services_outlined, color: AppColors.primary),
                 ),
-                child: Row(
+                const SizedBox(width: 16),
+                
+                // Middle details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        test.testName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        test.labOrClinicName,
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6), fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(Icons.calendar_today, size: 12, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                          const SizedBox(width: 4),
+                          Text(
+                            formattedDate,
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5), fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Right status and button
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Icon(Icons.info_outline,
-                        size: 16, color: AppColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        test.preparationInstructions,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textPrimary,
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: daysUntil < 0 ? AppColors.warning.withValues(alpha: 0.1) : AppColors.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            daysUntilStr,
+                            style: TextStyle(
+                              color: daysUntil < 0 ? AppColors.warning : AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Icon(Icons.delete_outline, size: 20, color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onPressed: () {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: const Text('Delete Test?'),
+                                content: Text('Are you sure you want to permanently delete the test "${test.testName}"?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.pop(context);
+                                      Future.microtask(() {
+                                        ref.read(remindersProvider.notifier).deleteTest(test.id);
+                                      });
+                                    }, 
+                                    child: const Text('Delete', style: TextStyle(color: Colors.red))
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () {
+                        ref.read(remindersProvider.notifier).markNextTestCompleted(test.id);
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.primary),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check, size: 16, color: AppColors.primary),
+                            SizedBox(width: 4),
+                            Text('Done', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ],
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              if (!isCompleted) ...[
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      ref
-                          .read(remindersProvider.notifier)
-                          .markNextTestCompleted(test.id);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content:
-                                Text('${test.testName} marked as completed!')),
-                          content: Row(
-                            children: [
-                              const Icon(Icons.celebration, color: Colors.white),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'Great job! ${test.testName} completed.\nYour doctor has been notified!',
-                                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                ),
-                              ),
-                            ],
-                          ),
-                          backgroundColor: AppColors.success,
-                          behavior: SnackBarBehavior.floating,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                          duration: const Duration(seconds: 4),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Text('Mark Completed'),
-                  ),
-                ),
               ],
-            ],
+            ),
           ),
         );
       },
     );
   }
-}
 
+  void _showAddTestModal(BuildContext context) {
+    final nameController = TextEditingController();
+    final labController = TextEditingController();
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Add Test', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Test Name'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: labController,
+                      decoration: const InputDecoration(labelText: 'Lab/Clinic'),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(selectedDate == null ? 'Select Date' : DateFormat('MMM d, yyyy').format(selectedDate!)),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null) {
+                          setModalState(() => selectedDate = date);
+                        }
+                      },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(selectedTime == null ? 'Select Time' : selectedTime!.format(context)),
+                      trailing: const Icon(Icons.access_time),
+                      onTap: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
+                        if (time != null) {
+                          setModalState(() => selectedTime = time);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (nameController.text.isEmpty || selectedDate == null || selectedTime == null) {
+                            return;
+                          }
+                          
+                          final scheduledDate = DateTime(
+                            selectedDate!.year,
+                            selectedDate!.month,
+                            selectedDate!.day,
+                            selectedTime!.hour,
+                            selectedTime!.minute,
+                          );
+
+                          final newTest = NextTestReminder(
+                            id: const Uuid().v4(),
+                            testName: nameController.text,
+                            labOrClinicName: labController.text,
+                            scheduledDate: scheduledDate,
+                            preparationInstructions: '',
+                            isCompleted: false,
+                          );
+
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
+                          Future.microtask(() {
+                            ref.read(remindersProvider.notifier).addNextTestReminder(newTest);
+                          });
+                        },
+                        child: const Text('Save Test'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/analytics_service.dart';
+import '../../../app.dart';
 import 'privacy_policy_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,6 +42,37 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _navigatePostAuth({bool forceOnboarding = false}) async {
+    final currentUser = _authService.currentUser;
+    if (currentUser == null) {
+      debugPrint('[Security] No active authenticated session found.');
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final bool profileCompleted = prefs.getBool('profile_completed') ?? false;
+    final String? profileOwner = prefs.getString('profile_owner_uid');
+    if (!mounted) return;
+
+    // Check both local storage AND if the user already has a configured name in Firebase
+    final bool isOwnerValid = profileOwner == null || profileOwner == currentUser.uid;
+    final bool hasDisplayName = currentUser.displayName != null && currentUser.displayName!.trim().isNotEmpty;
+
+    if (!forceOnboarding && (profileCompleted && isOwnerValid || hasDisplayName)) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const MainNavigationShell()),
+        (route) => false,
+      );
+    } else {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+        (route) => false,
+      );
+    }
+  }
+
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
       setState(() => _isLoading = true);
@@ -53,17 +88,44 @@ class _LoginScreenState extends State<LoginScreen> {
             _passwordController.text,
           );
         }
+        if (mounted) {
+          await _navigatePostAuth(forceOnboarding: _isSignUp);
+        }
       } catch (e) {
-        debugPrint('[Auth] Proceeding with offline/demo credentials: $e');
+        debugPrint('[Auth] Sign In / Sign Up error: $e');
+        final errorMsg = _authService.formatAuthError(e);
+        if (mounted) {
+          // If email is already in use during signup, offer auto-toggle to Sign In
+          if (_isSignUp && (errorMsg.contains('already in use') || errorMsg.contains('already exists'))) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMsg),
+                backgroundColor: AppColors.primary,
+                action: SnackBarAction(
+                  label: 'Sign In',
+                  textColor: Colors.white,
+                  onPressed: () {
+                    setState(() {
+                      _isSignUp = false;
+                      _confirmPasswordController.clear();
+                    });
+                  },
+                ),
+                duration: const Duration(seconds: 6),
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMsg),
+                backgroundColor: AppColors.error,
+              ),
+            );
+          }
+        }
       } finally {
         if (mounted) {
           setState(() => _isLoading = false);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const PrivacyPolicyScreen(),
-            ),
-          );
         }
       }
     }
@@ -76,24 +138,73 @@ class _LoginScreenState extends State<LoginScreen> {
       if (credential != null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Welcome, ${credential.user?.displayName ?? "User"}!'),
+            content: Text('Welcome, ${credential.displayName ?? "User"}!'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        await _navigatePostAuth();
+      } else {
+        debugPrint('[Auth] Google sign in was cancelled by user');
+      }
+    } catch (e) {
+      debugPrint('[Auth] Google Sign In error: $e');
+      final errorMsg = _authService.formatAuthError(e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty || !email.contains('@')) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter your email above to receive a password reset link.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Password reset link has been sent to $email.'),
             backgroundColor: AppColors.success,
           ),
         );
       }
     } catch (e) {
-      debugPrint('[Auth] Google Sign In fallback notice: $e');
-    } finally {
       if (mounted) {
-        setState(() => _isLoading = false);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const PrivacyPolicyScreen(),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_authService.formatAuthError(e)),
+            backgroundColor: AppColors.error,
           ),
         );
       }
     }
+  }
+
+  void _handleAppleSignIn() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Sign in with Apple requires active Apple Developer credentials.'),
+        backgroundColor: AppColors.primary,
+      ),
+    );
   }
 
   @override
@@ -301,14 +412,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Password reset link sent to your email'),
-                                    backgroundColor: AppColors.primary,
-                                  ),
-                                );
-                              },
+                              onPressed: _handleForgotPassword,
                               child: const Text(
                                 'Forgot Password?',
                                 style: TextStyle(
@@ -357,10 +461,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 28),
 
                         // Divider
-                        Row(
+                        const Row(
                           children: [
-                            Expanded(child: Divider(color: const Color(0xFF334155), thickness: 0.8)),
-                            const Padding(
+                            Expanded(child: Divider(color: Color(0xFF334155), thickness: 0.8)),
+                            Padding(
                               padding: EdgeInsets.symmetric(horizontal: 16),
                               child: Text(
                                 'or continue with',
@@ -370,7 +474,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: const Color(0xFF334155), thickness: 0.8)),
+                            Expanded(child: Divider(color: Color(0xFF334155), thickness: 0.8)),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -379,23 +483,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: _buildSocialButton(
-                                icon: Icons.g_mobiledata_rounded,
+                              child: _buildSocialButtonSvg(
+                                svgAsset: 'assets/icons/google_logo.svg',
                                 label: 'Google',
                                 onTap: _handleGoogleSignIn,
                               ),
                             ),
                             const SizedBox(width: 14),
                             Expanded(
-                              child: _buildSocialButton(
-                                icon: Icons.apple_rounded,
+                              child: _buildSocialButtonSvg(
+                                svgAsset: 'assets/icons/apple_logo.svg',
                                 label: 'Apple',
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
-                                  );
-                                },
+                                svgColor: Colors.white,
+                                onTap: _handleAppleSignIn,
                               ),
                             ),
                           ],
@@ -502,10 +602,11 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton({
-    required IconData icon,
+  Widget _buildSocialButtonSvg({
+    required String svgAsset,
     required String label,
     required VoidCallback onTap,
+    Color? svgColor,
   }) {
     return InkWell(
       onTap: onTap,
@@ -520,8 +621,15 @@ class _LoginScreenState extends State<LoginScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 24),
-            const SizedBox(width: 8),
+            SvgPicture.asset(
+              svgAsset,
+              width: 22,
+              height: 22,
+              colorFilter: svgColor != null
+                  ? ColorFilter.mode(svgColor, BlendMode.srcIn)
+                  : null,
+            ),
+            const SizedBox(width: 10),
             Text(
               label,
               style: const TextStyle(
@@ -536,3 +644,4 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
+
