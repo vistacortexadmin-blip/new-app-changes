@@ -636,13 +636,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                             durationDays: 30,
                           );
 
-                          ref
-                              .read(remindersProvider.notifier)
-                              .addMedicineReminder(reminder);
-
                           if (Navigator.of(context).canPop()) {
                             Navigator.of(context).pop();
                           }
+
+                          ref
+                              .read(remindersProvider.notifier)
+                              .addMedicineReminder(reminder);
                         },
                         child: const Text('Save Reminder'),
                       ),
@@ -872,13 +872,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: selectedAmount <= 0 ? null : () {
+                        if (Navigator.of(context).canPop()) {
+                          Navigator.of(context).pop();
+                        }
                         ref.read(remindersProvider.notifier).refillStock(
                           medicineId: med.id,
                           addedQuantity: selectedAmount,
                         );
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        }
                       },
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -937,13 +937,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 child: ElevatedButton(
                   onPressed: () {
                     final exactAmount = int.tryParse(customController.text) ?? med.totalQuantityAvailable;
+                    if (Navigator.of(context).canPop()) {
+                      Navigator.of(context).pop();
+                    }
                     ref.read(remindersProvider.notifier).updateStock(
                       medicineId: med.id,
                       exactQuantity: exactAmount,
                     );
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    }
                   },
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -1219,10 +1219,10 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                             isCompleted: false,
                           );
 
-                          ref.read(remindersProvider.notifier).addNextTestReminder(newTest);
                           if (Navigator.of(context).canPop()) {
                             Navigator.of(context).pop();
                           }
+                          ref.read(remindersProvider.notifier).addNextTestReminder(newTest);
                         },
                         child: const Text('Save Test'),
                       ),
