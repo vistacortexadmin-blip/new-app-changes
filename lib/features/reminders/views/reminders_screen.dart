@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart';
 import '../../../core/config/app_colors.dart';
 import '../models/reminder_model.dart';
 import '../providers/reminders_provider.dart';
@@ -82,7 +83,13 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.add, color: Colors.white, size: 24),
-                      onPressed: () => _showAddMedicineModal(context),
+                      onPressed: () {
+                        if (_tabController.index == 2) {
+                          _showAddTestModal(context);
+                        } else {
+                          _showAddMedicineModal(context);
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -110,7 +117,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 children: [
                   _buildDailyDosesTab(context),
                   _buildRefillSupplyTab(context),
-                  const Center(child: Text("Tests Tab (Coming Soon)")),
+                  _buildTestsTab(context),
                 ],
               ),
             ),
@@ -699,6 +706,178 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
               ],
             ],
           ),
+        );
+      },
+    );
+  }
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Tab 3: Tests
+  // ──────────────────────────────────────────────────────────────────────────
+
+  Widget _buildTestsTab(BuildContext context) {
+    final state = ref.watch(remindersProvider);
+    final upcomingTests = state.nextTests.where((test) => !test.isCompleted).toList();
+
+    if (upcomingTests.isEmpty) {
+      return const Center(child: Text("No upcoming tests. Add one using the + button."));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      itemCount: upcomingTests.length,
+      itemBuilder: (context, index) {
+        final test = upcomingTests[index];
+        final formattedDate = DateFormat('MMM d, yyyy').format(test.scheduledDate);
+        
+        final now = DateTime.now();
+        final testDate = DateTime(test.scheduledDate.year, test.scheduledDate.month, test.scheduledDate.day);
+        final today = DateTime(now.year, now.month, now.day);
+        final daysUntil = testDate.difference(today).inDays;
+        
+        String daysUntilStr;
+        if (daysUntil < 0) {
+          daysUntilStr = "Overdue";
+        } else if (daysUntil == 0) {
+          daysUntilStr = "Today";
+        } else if (daysUntil == 1) {
+          daysUntilStr = "Tomorrow";
+        } else {
+          daysUntilStr = "In $daysUntil days";
+        }
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            title: Text(test.testName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('${test.labOrClinicName}\n$formattedDate'),
+            isThreeLine: true,
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(daysUntilStr, style: TextStyle(color: daysUntil < 0 ? AppColors.warning : AppColors.primary, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: const Icon(Icons.check_circle_outline),
+                  onPressed: () {
+                    ref.read(remindersProvider.notifier).markNextTestCompleted(test.id);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddTestModal(BuildContext context) {
+    final nameController = TextEditingController();
+    final labController = TextEditingController();
+    DateTime? selectedDate;
+    TimeOfDay? selectedTime;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Add Test', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Test Name'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: labController,
+                      decoration: const InputDecoration(labelText: 'Lab/Clinic'),
+                    ),
+                    const SizedBox(height: 12),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(selectedDate == null ? 'Select Date' : DateFormat('MMM d, yyyy').format(selectedDate!)),
+                      trailing: const Icon(Icons.calendar_today),
+                      onTap: () async {
+                        final date = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now(),
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (date != null) {
+                          setModalState(() => selectedDate = date);
+                        }
+                      },
+                    ),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(selectedTime == null ? 'Select Time' : selectedTime!.format(context)),
+                      trailing: const Icon(Icons.access_time),
+                      onTap: () async {
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
+                        if (time != null) {
+                          setModalState(() => selectedTime = time);
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (nameController.text.isEmpty || selectedDate == null || selectedTime == null) {
+                            return;
+                          }
+                          
+                          final scheduledDate = DateTime(
+                            selectedDate!.year,
+                            selectedDate!.month,
+                            selectedDate!.day,
+                            selectedTime!.hour,
+                            selectedTime!.minute,
+                          );
+
+                          final newTest = NextTestReminder(
+                            id: const Uuid().v4(),
+                            testName: nameController.text,
+                            labOrClinicName: labController.text,
+                            scheduledDate: scheduledDate,
+                            preparationInstructions: '',
+                            isCompleted: false,
+                          );
+
+                          ref.read(remindersProvider.notifier).addNextTestReminder(newTest);
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Save Test'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
