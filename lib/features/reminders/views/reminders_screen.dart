@@ -618,10 +618,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       child: ElevatedButton(
                         onPressed: () {
                           if (nameController.text.isEmpty || selectedDoses.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter a name and select at least one time.')),
-                            );
-                            return;
+                            return; // Silently return if invalid to avoid context crashes
                           }
 
                           final reminder = MedicineReminder(
@@ -644,11 +641,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                               .read(remindersProvider.notifier)
                               .addMedicineReminder(reminder);
 
-                          // Safe snackbar call before closing modal
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Reminder schedule saved!')),
-                          );
-                          Navigator.pop(context);
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
                         },
                         child: const Text('Save Reminder'),
                       ),
@@ -1009,7 +1004,9 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                           );
 
                           ref.read(remindersProvider.notifier).addNextTestReminder(newTest);
-                          Navigator.pop(context);
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
                         },
                         child: const Text('Save Test'),
                       ),
