@@ -811,20 +811,98 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
 
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            title: Text(test.testName, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${test.labOrClinicName}\n$formattedDate'),
-            isThreeLine: true,
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
+          elevation: 1,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(daysUntilStr, style: TextStyle(color: daysUntil < 0 ? AppColors.warning : AppColors.primary, fontWeight: FontWeight.bold)),
-                IconButton(
-                  icon: const Icon(Icons.check_circle_outline),
-                  onPressed: () {
-                    ref.read(remindersProvider.notifier).markNextTestCompleted(test.id);
-                  },
+                // Left Icon
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.medical_services_outlined, color: AppColors.primary),
+                ),
+                const SizedBox(width: 16),
+                
+                // Middle details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        test.testName,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        test.labOrClinicName,
+                        style: TextStyle(color: Colors.grey[700], fontSize: 14),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            formattedDate,
+                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Right status and button
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: daysUntil < 0 ? AppColors.warning.withOpacity(0.1) : AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        daysUntilStr,
+                        style: TextStyle(
+                          color: daysUntil < 0 ? AppColors.warning : AppColors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    InkWell(
+                      onTap: () {
+                        ref.read(remindersProvider.notifier).markNextTestCompleted(test.id);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Test marked as completed! 🎉')),
+                        );
+                      },
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: AppColors.primary),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check, size: 16, color: AppColors.primary),
+                            SizedBox(width: 4),
+                            Text('Done', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
