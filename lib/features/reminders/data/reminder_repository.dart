@@ -54,7 +54,7 @@ class ReminderRepository {
 
     await _box.put(reminder.id, reminder);
 
-    // Schedule a local notification (fires offline / app closed).
+    // Schedule the local notification (fires offline / app closed).
     await NotificationService.instance.scheduleReminder(
       id: reminder.id,
       title: reminder.title,
@@ -82,18 +82,34 @@ class ReminderRepository {
   Future<void> toggleEnabled(String id, bool enabled) async {
     final r = _box.get(id);
     if (r == null) return;
+
     final updated = r.copyWith(
       isEnabled: enabled,
       updatedAt: DateTime.now(),
       isSynced: false,
     );
     await _box.put(id, updated);
+
+    // Cancel the scheduled notification when disabled; reschedule when enabled.
+    if (enabled) {
+      await NotificationService.instance.scheduleReminder(
+        id: updated.id,
+        title: updated.title,
+        body: 'Time for your ${updated.type} reminder',
+        when: updated.scheduledTime,
+        daily: updated.isRecurring,
+      );
+    } else {
+      await NotificationService.instance.cancelReminder(updated.id);
+    }
+
     await _trySync(updated);
   }
 
   Future<void> reschedule(String id, DateTime newTime) async {
     final r = _box.get(id);
     if (r == null) return;
+
     final updated = r.copyWith(
       scheduledTime: newTime,
       updatedAt: DateTime.now(),
@@ -114,6 +130,9 @@ class ReminderRepository {
   }
 
   Future<void> deleteReminder(String id) async {
+    // Cancel the scheduled notification before deleting.
+    await NotificationService.instance.cancelReminder(id);
+
     await _box.delete(id);
     if (_userId != null) {
       try {

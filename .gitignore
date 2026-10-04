@@ -50,3 +50,7 @@ android/build/
 build/
 *.patch
 devtools_options.yaml
+
+# Kotlin build sessions
+android/.kotlin/
+*.salive

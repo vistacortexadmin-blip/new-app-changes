@@ -13,32 +13,63 @@ class NotificationService {
   final _local = FlutterLocalNotificationsPlugin();
   StreamSubscription? _supabaseSub;
 
+  /// Called when user taps a notification. Step 8 will wire this to
+  /// navigate to the Reminders tab.
+  void Function(String? payload)? onNotificationTap;
+
   Future<void> init() async {
-    tz.initializeTimeZones();
-    final tzInfo = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
+    try {
+      tz.initializeTimeZones();
+      try {
+        final tzInfo = await FlutterTimezone.getLocalTimezone()
+            .timeout(const Duration(seconds: 3));
+        tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
+      } catch (_) {
+        // Fallback: keep default UTC.
+      }
 
-    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const ios = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
-    );
-    const settings = InitializationSettings(android: android, iOS: ios);
+      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+      const ios = DarwinInitializationSettings(
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
+      const settings = InitializationSettings(android: android, iOS: ios);
 
-    await _local.initialize(settings: settings);
-    await requestPermissions();
+      await _local.initialize(
+        settings: settings,
+        onDidReceiveNotificationResponse: (response) {
+          onNotificationTap?.call(response.payload);
+        },
+        onDidReceiveBackgroundNotificationResponse:
+            onBackgroundNotificationResponse,
+      );
+
+      await requestPermissions();
+    } catch (e) {
+      // ignore: avoid_print
+      print('NotificationService.init failed: $e');
+    }
   }
 
   Future<void> requestPermissions() async {
-    final android = _local.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
-    await android?.requestNotificationsPermission();
-    await android?.requestExactAlarmsPermission();
+    try {
+      final android = _local.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      await android?.requestNotificationsPermission();
+      await android?.requestExactAlarmsPermission();
 
-    final ios = _local.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
-    await ios?.requestPermissions(alert: true, badge: true, sound: true);
+      final ios = _local.resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+      await ios?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    } catch (e) {
+      // ignore: avoid_print
+      print('NotificationService.requestPermissions failed: $e');
+    }
   }
 
   Future<void> scheduleReminder({
@@ -48,28 +79,49 @@ class NotificationService {
     required DateTime when,
     bool daily = false,
   }) async {
-    final scheduled = tz.TZDateTime.from(when, tz.local);
+    try {
+      final scheduled = tz.TZDateTime.from(when, tz.local);
 
-    await _local.zonedSchedule(
-      id: id.hashCode,
-      title: title,
-      body: body,
-      scheduledDate: scheduled,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'reminders',
-          'Reminders',
-          channelDescription: 'Medication, test and follow-up reminders',
-          importance: Importance.max,
-          priority: Priority.high,
-          category: AndroidNotificationCategory.reminder,
+      await _local.zonedSchedule(
+        id: id.hashCode,
+        title: title,
+        body: body,
+        scheduledDate: scheduled,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'reminders_channel',
+            'Reminders',
+            channelDescription: 'Medication, test and follow-up reminders',
+            importance: Importance.max,
+            priority: Priority.high,
+            category: AndroidNotificationCategory.reminder,
+            ticker: 'Reminder',
+            playSound: true,
+            enableVibration: true,
+          ),
+          iOS: DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      matchDateTimeComponents: daily ? DateTimeComponents.time : null,
-      payload: id,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        matchDateTimeComponents: daily ? DateTimeComponents.time : null,
+        payload: id,
+      );
+    } catch (e) {
+      // ignore: avoid_print
+      print('NotificationService.scheduleReminder failed for $id: $e');
+    }
+  }
+
+  Future<void> cancelReminder(String id) async {
+    try {
+      await _local.cancel(id: id.hashCode);
+    } catch (e) {
+      // ignore: avoid_print
+      print('NotificationService.cancelReminder failed for $id: $e');
+    }
   }
 
   Future<void> showSystemNotification({
@@ -77,21 +129,27 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
-    await _local.show(
-      id: id.hashCode,
-      title: title,
-      body: body,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'system',
-          'System alerts',
-          importance: Importance.high,
-          priority: Priority.high,
+    try {
+      await _local.show(
+        id: id.hashCode,
+        title: title,
+        body: body,
+        notificationDetails: const NotificationDetails(
+          android: AndroidNotificationDetails(
+            'system_channel',
+            'System alerts',
+            channelDescription: 'Report, test and account notifications',
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
         ),
-        iOS: DarwinNotificationDetails(),
-      ),
-      payload: id,
-    );
+        payload: id,
+      );
+    } catch (e) {
+      // ignore: avoid_print
+      print('NotificationService.showSystemNotification failed: $e');
+    }
   }
 
   void listenToSupabaseNotifications(String userId) {
@@ -104,14 +162,26 @@ class NotificationService {
         .order('created_at')
         .listen((rows) {
           for (final row in rows) {
-            if (row['is_read'] == false) {
+            final isRead = row['is_read'] == true;
+            if (!isRead) {
               showSystemNotification(
                 id: row['id'] as String,
-                title: row['title'] as String,
-                body: row['body'] as String,
+                title: row['title'] as String? ?? 'Notification',
+                body: row['body'] as String? ?? '',
               );
             }
           }
         });
   }
+
+  void dispose() {
+    _supabaseSub?.cancel();
+  }
+}
+
+/// Top-level, public, isolate entry point.
+/// Must NOT be private (no leading underscore) — the isolate can't find it.
+@pragma('vm:entry-point')
+void onBackgroundNotificationResponse(NotificationResponse response) {
+  // Step 8: route by payload to open Reminders tab on next launch.
 }
