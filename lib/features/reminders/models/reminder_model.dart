@@ -1,3 +1,18 @@
+// ============================================================
+// DEPRECATED — Do not use in new code.
+//
+// This file contains the legacy feature-specific models
+// (MedicineReminder, NextTestReminder, DoseSchedule).
+// They are being replaced by the unified `Reminder` model
+// in `universal_reminder.dart`.
+//
+// New code MUST use `Reminder` from `universal_reminder.dart`.
+// This file will be deleted once migration is complete.
+// ============================================================
+
+@Deprecated('Use Reminder from universal_reminder.dart instead.')
+library;
+
 enum DoseTimeOfDay {
   morning,
   afternoon,
@@ -89,7 +104,8 @@ class MedicineReminder {
       instructions: instructions,
       prescribedFor: prescribedFor,
       dailySchedules: dailySchedules ?? this.dailySchedules,
-      totalQuantityAvailable: totalQuantityAvailable ?? this.totalQuantityAvailable,
+      totalQuantityAvailable:
+          totalQuantityAvailable ?? this.totalQuantityAvailable,
       dailyDoseCount: dailyDoseCount,
       startDate: startDate,
       durationDays: durationDays,
@@ -118,7 +134,8 @@ class NextTestReminder {
 
   int get daysUntilTest {
     final now = DateTime.now();
-    final difference = scheduledDate.difference(DateTime(now.year, now.month, now.day)).inDays;
+    final difference =
+        scheduledDate.difference(DateTime(now.year, now.month, now.day)).inDays;
     return difference;
   }
 

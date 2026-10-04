@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/universal_reminder.dart';
+import '../models/reminder.dart';
 
 void showReminderPopup(
   BuildContext context, {
@@ -25,11 +25,11 @@ class ReminderPopupWidget extends StatefulWidget {
   final String itemId;
 
   const ReminderPopupWidget({
-    Key? key,
+    super.key,
     required this.type,
     required this.title,
     required this.itemId,
-  }) : super(key: key);
+  });
 
   @override
   State<ReminderPopupWidget> createState() => _ReminderPopupWidgetState();
@@ -69,11 +69,13 @@ class _ReminderPopupWidgetState extends State<ReminderPopupWidget> {
 
     // Professional, production-level success alert confirmation
     String displayType = 'Reminder';
-    if (_selectedType == ReminderType.MEDICINE)
+    if (_selectedType == ReminderType.MEDICINE) {
       displayType = 'Medicine intake schedule';
+    }
     if (_selectedType == ReminderType.TEST) displayType = 'Lab test window';
-    if (_selectedType == ReminderType.CUSTOM)
+    if (_selectedType == ReminderType.CUSTOM) {
       displayType = 'Doctor follow-up appointment';
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -92,10 +94,10 @@ class _ReminderPopupWidgetState extends State<ReminderPopupWidget> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      title: Row(
+      title: const Row(
         children: [
-          const Text('⏰ ', style: TextStyle(fontSize: 20)),
-          const Text('Set Schedule Alarm',
+          Text('⏰ ', style: TextStyle(fontSize: 20)),
+          Text('Set Schedule Alarm',
               style: TextStyle(fontWeight: FontWeight.bold)),
         ],
       ),

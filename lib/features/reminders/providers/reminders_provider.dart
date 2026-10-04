@@ -1,171 +1,54 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/reminder_model.dart';
-import '../../../core/storage/seed_data.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class RemindersState {
-  final List<MedicineReminder> medicines;
-  final List<NextTestReminder> nextTests;
-  final DoseTimeOfDay selectedTimeFilter;
+import '../data/reminder_repository.dart';
+import '../models/reminder.dart';
 
-  RemindersState({
-    required this.medicines,
-    required this.nextTests,
-    this.selectedTimeFilter = DoseTimeOfDay.morning,
+// ---------- Repository ----------
+final reminderRepositoryProvider = Provider<ReminderRepository>((ref) {
+  return ReminderRepository(
+    Hive.box<Reminder>('reminders'),
+    Supabase.instance.client,
+  );
+});
+
+// ---------- Live stream from Hive ----------
+final remindersStreamProvider =
+    StreamProvider.autoDispose<List<Reminder>>((ref) {
+  final repo = ref.watch(reminderRepositoryProvider);
+  final box = Hive.box<Reminder>('reminders');
+
+  return Stream<List<Reminder>>.multi((controller) {
+    controller.add(repo.all);
+    final sub = box.watch().listen((_) => controller.add(repo.all));
+    controller.onCancel = sub.cancel;
   });
+});
 
-  List<MedicineReminder> get lowSupplyMedicines =>
-      medicines.where((m) => m.isLowSupply).toList();
+// ---------- Filter (null = All, else MEDICINE / TEST / CUSTOM) ----------
+final reminderFilterProvider =
+    StateProvider.autoDispose<String?>((ref) => null);
 
-  List<NextTestReminder> get upcomingTests =>
-      nextTests.where((t) => !t.isCompleted).toList();
+// ---------- Filtered list for the screen ----------
+final filteredRemindersProvider =
+    Provider.autoDispose<AsyncValue<List<Reminder>>>((ref) {
+  final async = ref.watch(remindersStreamProvider);
+  final filter = ref.watch(reminderFilterProvider);
 
-  int get pendingDosesTodayCount {
-    int count = 0;
-    for (final med in medicines) {
-      for (final schedule in med.dailySchedules) {
-        if (schedule.status == AdherenceStatus.pending) count++;
-      }
-    }
-    return count;
-  }
+  return async.whenData((list) {
+    if (filter == null) return list;
+    return list.where((r) => r.type.toUpperCase() == filter).toList();
+  });
+});
 
-  double get adherencePercentage {
-    int total = 0;
-    int taken = 0;
-    for (final med in medicines) {
-      for (final schedule in med.dailySchedules) {
-        total++;
-        if (schedule.status == AdherenceStatus.taken) taken++;
-      }
-    }
-    if (total == 0) return 0.0;
-    return taken / total;
-  }
-
-  RemindersState copyWith({
-    List<MedicineReminder>? medicines,
-    List<NextTestReminder>? nextTests,
-    DoseTimeOfDay? selectedTimeFilter,
-  }) {
-    return RemindersState(
-      medicines: medicines ?? this.medicines,
-      nextTests: nextTests ?? this.nextTests,
-      selectedTimeFilter: selectedTimeFilter ?? this.selectedTimeFilter,
-    );
-  }
-}
-
-class RemindersNotifier extends StateNotifier<RemindersState> {
-  RemindersNotifier()
-      : super(RemindersState(
-          medicines: SeedData.initialReminders,
-          nextTests: SeedData.initialNextTests,
-        ));
-
-  void setTimeFilter(DoseTimeOfDay filter) {
-    state = state.copyWith(selectedTimeFilter: filter);
-  }
-
-  void markDoseTaken({
-    required String medicineId,
-    required DoseTimeOfDay timeOfDay,
-  }) {
-    final updatedMedicines = state.medicines.map((med) {
-      if (med.id == medicineId) {
-        final updatedSchedules = med.dailySchedules.map((schedule) {
-          if (schedule.timeOfDay == timeOfDay) {
-            return schedule.copyWith(
-              status: AdherenceStatus.taken,
-              loggedAt: DateTime.now(),
-            );
-          }
-          return schedule;
-        }).toList();
-
-        // Decrement 1 pill from quantity count
-        final newQuantity = (med.totalQuantityAvailable - 1).clamp(0, 999);
-        return med.copyWith(
-          dailySchedules: updatedSchedules,
-          totalQuantityAvailable: newQuantity,
-        );
-      }
-      return med;
-    }).toList();
-
-    state = state.copyWith(medicines: updatedMedicines);
-  }
-
-  void markDoseSkipped({
-    required String medicineId,
-    required DoseTimeOfDay timeOfDay,
-    String reason = 'Patient elected to skip',
-  }) {
-    final updatedMedicines = state.medicines.map((med) {
-      if (med.id == medicineId) {
-        final updatedSchedules = med.dailySchedules.map((schedule) {
-          if (schedule.timeOfDay == timeOfDay) {
-            return schedule.copyWith(
-              status: AdherenceStatus.skipped,
-              loggedAt: DateTime.now(),
-              skipReason: reason,
-            );
-          }
-          return schedule;
-        }).toList();
-
-        return med.copyWith(dailySchedules: updatedSchedules);
-      }
-      return med;
-    }).toList();
-
-    state = state.copyWith(medicines: updatedMedicines);
-  }
-
-  void refillStock({
-    required String medicineId,
-    required int addedQuantity,
-  }) {
-    final updatedMedicines = state.medicines.map((med) {
-      if (med.id == medicineId) {
-        return med.copyWith(
-          totalQuantityAvailable: med.totalQuantityAvailable + addedQuantity,
-        );
-      }
-      return med;
-    }).toList();
-
-    state = state.copyWith(medicines: updatedMedicines);
-  }
-
-  void addMedicineReminder(MedicineReminder reminder) {
-    state = state.copyWith(medicines: [reminder, ...state.medicines]);
-  }
-
-  void addNextTestReminder(NextTestReminder reminder) {
-    state = state.copyWith(nextTests: [reminder, ...state.nextTests]);
-  }
-
-  void markNextTestCompleted(String id) {
-    final updatedTests = state.nextTests.map((t) {
-      if (t.id == id) {
-        return NextTestReminder(
-          id: t.id,
-          testName: t.testName,
-          labOrClinicName: t.labOrClinicName,
-          scheduledDate: t.scheduledDate,
-          preparationInstructions: t.preparationInstructions,
-          isCompleted: true,
-          relatedReportId: t.relatedReportId,
-        );
-      }
-      return t;
-    }).toList();
-
-    state = state.copyWith(nextTests: updatedTests);
-  }
-}
-
-final remindersProvider =
-    StateNotifierProvider<RemindersNotifier, RemindersState>((ref) {
-  return RemindersNotifier();
+// ---------- Today count (for Home badge / Bell) ----------
+final todayReminderCountProvider = Provider.autoDispose<int>((ref) {
+  final list = ref.watch(remindersStreamProvider).valueOrNull ?? const [];
+  final now = DateTime.now();
+  return list.where((r) {
+    return r.scheduledTime.year == now.year &&
+        r.scheduledTime.month == now.month &&
+        r.scheduledTime.day == now.day;
+  }).length;
 });

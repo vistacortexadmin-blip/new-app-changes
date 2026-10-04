@@ -1,8 +1,8 @@
 #!/bin/sh
 # This is a generated file; do not edit or check into version control.
-export "FLUTTER_ROOT=D:\Vistacortex\flutter"
-export "FLUTTER_APPLICATION_PATH=D:\Vistacortex"
-export "FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=D:\Vistacortex\ios\Flutter\ephemeral\Packages\.packages\FlutterFramework"
+export "FLUTTER_ROOT=C:\Users\vpava\Downloads\flutter"
+export "FLUTTER_APPLICATION_PATH=C:\Users\vpava\Desktop\VistaCortex\new-app-changes"
+export "FLUTTER_FRAMEWORK_SWIFT_PACKAGE_PATH=C:\Users\vpava\Desktop\VistaCortex\new-app-changes\ios\Flutter\ephemeral\Packages\.packages\FlutterFramework"
 export "COCOAPODS_PARALLEL_CODE_SIGN=true"
 export "FLUTTER_TARGET=lib\main.dart"
 export "FLUTTER_BUILD_DIR=build"

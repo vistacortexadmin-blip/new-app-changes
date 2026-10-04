@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/test_booking_model.dart';
+
 import '../../../core/storage/seed_data.dart';
+import '../../reminders/models/reminder.dart';
 import '../../reminders/providers/reminders_provider.dart';
-import '../../reminders/models/reminder_model.dart';
+import '../models/test_booking_model.dart';
 
 class TestBookingState {
   final List<DiagnosticProvider> providers;
@@ -25,11 +26,13 @@ class TestBookingState {
 
   List<BookableTest> get filteredTests {
     return tests.where((t) {
-      final matchesCat = selectedCategory == null || t.category == selectedCategory;
+      final matchesCat =
+          selectedCategory == null || t.category == selectedCategory;
       final matchesQuery = searchQuery.isEmpty ||
           t.name.toLowerCase().contains(searchQuery.toLowerCase()) ||
           t.description.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          t.includedParameters.any((p) => p.toLowerCase().contains(searchQuery.toLowerCase()));
+          t.includedParameters
+              .any((p) => p.toLowerCase().contains(searchQuery.toLowerCase()));
       return matchesCat && matchesQuery;
     }).toList();
   }
@@ -49,7 +52,8 @@ class TestBookingState {
       tests: tests ?? this.tests,
       confirmedOrders: confirmedOrders ?? this.confirmedOrders,
       searchQuery: searchQuery ?? this.searchQuery,
-      selectedCategory: clearCategory ? null : (selectedCategory ?? this.selectedCategory),
+      selectedCategory:
+          clearCategory ? null : (selectedCategory ?? this.selectedCategory),
       selectedTest: selectedTest ?? this.selectedTest,
       selectedProvider: selectedProvider ?? this.selectedProvider,
     );
@@ -63,7 +67,7 @@ class TestBookingNotifier extends StateNotifier<TestBookingState> {
       : super(TestBookingState(
           providers: SeedData.diagnosticProviders,
           tests: SeedData.bookableTests,
-          confirmedOrders: [],
+          confirmedOrders: const [],
         ));
 
   void setSearchQuery(String query) {
@@ -78,22 +82,26 @@ class TestBookingNotifier extends StateNotifier<TestBookingState> {
     }
   }
 
-  void selectTestAndProvider({BookableTest? test, DiagnosticProvider? provider}) {
+  void selectTestAndProvider({
+    BookableTest? test,
+    DiagnosticProvider? provider,
+  }) {
     state = state.copyWith(
       selectedTest: test ?? state.selectedTest,
       selectedProvider: provider ?? state.selectedProvider,
     );
   }
 
-  TestBookingOrder confirmBooking({
+  Future<TestBookingOrder> confirmBooking({
     required BookableTest test,
     required DiagnosticProvider provider,
     required DateTime date,
     required String timeSlot,
     required bool isHomeCollection,
-  }) {
+  }) async {
     final order = TestBookingOrder(
-      orderId: 'ORD_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
+      orderId:
+          'ORD_${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
       test: test,
       provider: provider,
       scheduledDate: date,
@@ -107,15 +115,13 @@ class TestBookingNotifier extends StateNotifier<TestBookingState> {
       confirmedOrders: [order, ...state.confirmedOrders],
     );
 
-    // Automatically sync booking to Next-Test Reminder Engine! (PRD 3.9 requirement)
-    ref.read(remindersProvider.notifier).addNextTestReminder(
-          NextTestReminder(
-            id: 'book_${order.orderId}',
-            testName: test.name,
-            labOrClinicName: provider.name,
-            scheduledDate: date,
-            preparationInstructions: test.preparationInstruction,
-          ),
+    // Auto-create a reminder for the booked test.
+    await ref.read(reminderRepositoryProvider).addReminder(
+          title: 'Lab test: ${test.name} @ ${provider.name}',
+          type: ReminderType.TEST,
+          scheduledTime: date,
+          source: ReminderSource.auto,
+          relatedTestId: order.orderId,
         );
 
     return order;
