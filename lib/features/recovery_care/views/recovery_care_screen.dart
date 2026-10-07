@@ -125,7 +125,10 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen> {
       return;
     }
 
-    setState(() => _isSearchingProcedures = true);
+    setState(() {
+      _isSearchingProcedures = true;
+      _selectedProcedure = null;
+    });
 
     _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
       try {
@@ -145,6 +148,31 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen> {
         });
       }
     });
+  }
+
+  void _addCustomProcedure() {
+    final procedureName = _procedureController.text.trim();
+    if (procedureName.isEmpty) return;
+
+    setState(() {
+      _selectedProcedure = procedureName;
+      _suggestions = const [];
+    });
+
+    ref.read(recoveryDietProvider.notifier).setProcedureName(procedureName);
+  }
+
+  void _removeProcedure() {
+    _searchDebounce?.cancel();
+    _procedureController.clear();
+
+    setState(() {
+      _selectedProcedure = null;
+      _suggestions = const [];
+      _isSearchingProcedures = false;
+    });
+
+    ref.read(recoveryDietProvider.notifier).setProcedureName('');
   }
 
   void _selectProcedure(ProcedureSuggestion suggestion) {
@@ -213,63 +241,115 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen> {
             ),
             const SizedBox(height: 10),
 
-            TextField(
-              controller: _procedureController,
-              onChanged: _onProcedureChanged,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: 'Type surgery or procedure name...',
-                hintStyle: const TextStyle(
-                  fontSize: 13,
-                  color: AppColors.textSecondary,
+            if (_selectedProcedure != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 13,
                 ),
-                prefixIcon: const Icon(
-                  Icons.medical_services_outlined,
-                  color: AppColors.textSecondary,
-                  size: 20,
-                ),
-                suffixIcon: _isSearchingProcedures
-                    ? const Padding(
-                        padding: EdgeInsets.all(13),
-                        child: SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : (_procedureController.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear_rounded),
-                            onPressed: () {
-                              _procedureController.clear();
-                              setState(() {
-                                _selectedProcedure = null;
-                                _suggestions = const [];
-                              });
-                            },
-                          )
-                        : null),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
+                decoration: BoxDecoration(
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(
+                  border: Border.all(
                     color: AppColors.primary,
                     width: 1.5,
                   ),
                 ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.medical_services_outlined,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _selectedProcedure!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _removeProcedure,
+                      tooltip: 'Remove procedure',
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        color: AppColors.textSecondary,
+                        size: 21,
+                      ),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 32,
+                        minHeight: 32,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              TextField(
+                controller: _procedureController,
+                onChanged: _onProcedureChanged,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: 'Type surgery or procedure name...',
+                  hintStyle: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.medical_services_outlined,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  suffixIcon: _isSearchingProcedures
+                      ? const Padding(
+                          padding: EdgeInsets.all(13),
+                          child: SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        )
+                      : (_procedureController.text.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded),
+                              onPressed: () {
+                                _procedureController.clear();
+                                setState(() {
+                                  _suggestions = const [];
+                                });
+                              },
+                            )
+                          : null),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
+                    ),
+                  ),
+                ),
               ),
-            ),
 
-            if (_suggestions.isNotEmpty) ...[
+            if (_selectedProcedure == null && _suggestions.isNotEmpty) ...[
               const SizedBox(height: 6),
               Container(
                 constraints: const BoxConstraints(maxHeight: 280),
@@ -320,49 +400,53 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen> {
               ),
             ],
 
-            if (!_isSearchingProcedures &&
+            if (_selectedProcedure == null &&
+                !_isSearchingProcedures &&
                 _procedureController.text.trim().length >= 2 &&
                 _suggestions.isEmpty) ...[
               const SizedBox(height: 8),
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  'No matching procedure found. Try a shorter part of the name.',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-
-            if (_selectedProcedure != null) ...[
-              const SizedBox(height: 10),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 10,
-                ),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primarySurface,
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.check_circle_rounded,
-                      color: AppColors.primary,
+                      Icons.info_outline_rounded,
+                      color: AppColors.textSecondary,
                       size: 19,
                     ),
                     const SizedBox(width: 8),
-                    Expanded(
+                    const Expanded(
                       child: Text(
-                        'Selected: $_selectedProcedure',
-                        style: const TextStyle(
+                        'No matching procedure found.',
+                        style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _addCustomProcedure,
+                      icon: const Icon(Icons.add_rounded, size: 17),
+                      label: const Text('Add'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
                       ),
                     ),
