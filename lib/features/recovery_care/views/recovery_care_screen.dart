@@ -1,6 +1,93 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/config/app_colors.dart';
+import '../providers/recovery_diet_provider.dart';
+
+class ProcedureSuggestion {
+  final String code;
+  final String name;
+
+  const ProcedureSuggestion({
+    required this.code,
+    required this.name,
+  });
+}
+
+class ProcedureSearchService {
+  static const String _endpoint =
+      'https://clinicaltables.nlm.nih.gov/api/procedures/v3/search';
+
+  Future<List<ProcedureSuggestion>> search(String query) async {
+    final trimmed = query.trim();
+    if (trimmed.length < 2) return const [];
+
+    final uri = Uri.parse(_endpoint).replace(
+      queryParameters: {
+        'terms': trimmed,
+        'sf': 'consumer_name,primary_name,word_synonyms,synonyms',
+        'df': 'consumer_name,primary_name',
+        'cf': 'key_id',
+        'maxList': '15',
+      },
+    );
+
+    final response = await http.get(
+      uri,
+      headers: const {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Procedure search failed: ${response.statusCode}');
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! List || decoded.length < 4) return const [];
+
+    // Clinical Tables response:
+    // [totalCount, codes, extraFields, displayRows, ...]
+    // The previous code incorrectly read decoded[1] (codes), so the UI
+    // received IDs instead of procedure names.
+    final codes = decoded[1];
+    final displayRows = decoded[3];
+
+    if (displayRows is! List) return const [];
+
+    final results = <ProcedureSuggestion>[];
+
+    for (var i = 0; i < displayRows.length; i++) {
+      final row = displayRows[i];
+      if (row is! List || row.isEmpty) continue;
+
+      String? name;
+      for (final item in row) {
+        if (item is String && item.trim().isNotEmpty) {
+          name = item.trim();
+          break;
+        }
+      }
+
+      if (name == null) continue;
+
+      String code = '';
+      if (codes is List && i < codes.length) {
+        code = codes[i]?.toString() ?? '';
+      }
+
+      results.add(
+        ProcedureSuggestion(
+          code: code,
+          name: name,
+        ),
+      );
+    }
+
+    return results;
+  }
+}
 
 
 class RecoveryCareScreen extends ConsumerStatefulWidget {
@@ -11,7 +98,68 @@ class RecoveryCareScreen extends ConsumerStatefulWidget {
 }
 
 class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen> {
-  String _selectedSurgery = 'Knee Replacement';
+  final TextEditingController _procedureController = TextEditingController();
+  final ProcedureSearchService _procedureSearchService = ProcedureSearchService();
+
+  Timer? _searchDebounce;
+  List<ProcedureSuggestion> _suggestions = const [];
+  bool _isSearchingProcedures = false;
+  String? _selectedProcedure;
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _procedureController.dispose();
+    super.dispose();
+  }
+
+  void _onProcedureChanged(String value) {
+    _searchDebounce?.cancel();
+
+    final query = value.trim();
+    if (query.length < 2) {
+      setState(() {
+        _suggestions = const [];
+        _isSearchingProcedures = false;
+      });
+      return;
+    }
+
+    setState(() => _isSearchingProcedures = true);
+
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
+      try {
+        final results = await _procedureSearchService.search(query);
+        if (!mounted) return;
+
+        setState(() {
+          _suggestions = results;
+          _isSearchingProcedures = false;
+        });
+      } catch (_) {
+        if (!mounted) return;
+
+        setState(() {
+          _suggestions = const [];
+          _isSearchingProcedures = false;
+        });
+      }
+    });
+  }
+
+  void _selectProcedure(ProcedureSuggestion suggestion) {
+    setState(() {
+      _selectedProcedure = suggestion.name;
+      _procedureController.text = suggestion.name;
+      _procedureController.selection = TextSelection.collapsed(
+        offset: _procedureController.text.length,
+      );
+      _suggestions = const [];
+    });
+
+    // Keep the selected procedure in the recovery plan.
+    ref.read(recoveryDietProvider.notifier).setProcedureName(suggestion.name);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,88 +202,175 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 1. Search Procedures Input
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.border),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.02),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: const TextField(
-                decoration: InputDecoration(
-                  icon: Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
-                  hintText: 'Search procedures (e.g. Knee Replacement)...',
-                  hintStyle: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 22),
-
-            // 2. Select Your Surgery Header
+            // Procedure input with live autocomplete.
             const Text(
-              'Select Your Surgery',
+              'Add Procedure',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 10),
 
-            // 4 Surgery Category Cards
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildSurgeryTypeCard(
-                    title: 'Knee\nReplacement',
-                    icon: Icons.accessibility_new_rounded,
-                    iconColor: const Color(0xFF0D9488),
-                    bgColor: const Color(0xFFF0FDFA),
-                    borderColor: const Color(0xFF99F6E4),
+            TextField(
+              controller: _procedureController,
+              onChanged: _onProcedureChanged,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                hintText: 'Type surgery or procedure name...',
+                hintStyle: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
+                prefixIcon: const Icon(
+                  Icons.medical_services_outlined,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                suffixIcon: _isSearchingProcedures
+                    ? const Padding(
+                        padding: EdgeInsets.all(13),
+                        child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
+                    : (_procedureController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear_rounded),
+                            onPressed: () {
+                              _procedureController.clear();
+                              setState(() {
+                                _selectedProcedure = null;
+                                _suggestions = const [];
+                              });
+                            },
+                          )
+                        : null),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(color: AppColors.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 1.5,
                   ),
-                  const SizedBox(width: 10),
-                  _buildSurgeryTypeCard(
-                    title: 'Heart\nSurgery',
-                    icon: Icons.favorite_outline_rounded,
-                    iconColor: const Color(0xFFEF4444),
-                    bgColor: const Color(0xFFFEE2E2),
-                    borderColor: const Color(0xFFFECACA),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildSurgeryTypeCard(
-                    title: 'Gallbladder\nSurgery',
-                    icon: Icons.healing_rounded,
-                    iconColor: const Color(0xFF10B981),
-                    bgColor: const Color(0xFFECFDF5),
-                    borderColor: const Color(0xFFA7F3D0),
-                  ),
-                  const SizedBox(width: 10),
-                  _buildSurgeryTypeCard(
-                    title: 'Appendix\nSurgery',
-                    icon: Icons.medical_information_outlined,
-                    iconColor: const Color(0xFF2563EB),
-                    bgColor: const Color(0xFFEFF6FF),
-                    borderColor: const Color(0xFFBFDBFE),
-                  ),
-                ],
+                ),
               ),
             ),
-            const SizedBox(height: 24),
 
-            // 3. Your Recovery Plan Stepper
+            if (_suggestions.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 280),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  itemCount: _suggestions.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (context, index) {
+                    final suggestion = _suggestions[index];
+
+                    return ListTile(
+                      dense: true,
+                      leading: const Icon(
+                        Icons.local_hospital_outlined,
+                        color: AppColors.primary,
+                        size: 21,
+                      ),
+                      title: Text(
+                        suggestion.name,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                      onTap: () => _selectProcedure(suggestion),
+                    );
+                  },
+                ),
+              ),
+            ],
+
+            if (!_isSearchingProcedures &&
+                _procedureController.text.trim().length >= 2 &&
+                _suggestions.isEmpty) ...[
+              const SizedBox(height: 8),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4),
+                child: Text(
+                  'No matching procedure found. Try a shorter part of the name.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+
+            if (_selectedProcedure != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.primarySurface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.check_circle_rounded,
+                      color: AppColors.primary,
+                      size: 19,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Selected: $_selectedProcedure',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             const Text(
               'Your Recovery Plan',
               style: TextStyle(
@@ -211,51 +446,6 @@ class _RecoveryCareScreenState extends ConsumerState<RecoveryCareScreen> {
               ),
             ),
             const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSurgeryTypeCard({
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required Color bgColor,
-    required Color borderColor,
-  }) {
-    final isSelected = _selectedSurgery == title.replaceAll('\n', ' ');
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedSurgery = title.replaceAll('\n', ' ');
-        });
-      },
-      child: Container(
-        width: 104,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? iconColor : borderColor,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, color: iconColor, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-                height: 1.2,
-              ),
-            ),
           ],
         ),
       ),

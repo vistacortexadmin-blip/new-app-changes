@@ -58,6 +58,14 @@ class RecoveryDietNotifier extends StateNotifier<RecoveryDietState> {
     );
   }
 
+  void setProcedureName(String procedureName) {
+    state = state.copyWith(
+      recoveryPlan: state.recoveryPlan.copyWith(
+        procedureName: procedureName,
+      ),
+    );
+  }
+
   void updatePainScore(int score) {
     state = state.copyWith(
       recoveryPlan: state.recoveryPlan.copyWith(painLevelScore: score),

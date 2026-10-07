@@ -67,12 +67,13 @@ class RecoveryCarePlan {
   double get progressFraction => (currentDay / totalRecoveryDays).clamp(0.0, 1.0);
 
   RecoveryCarePlan copyWith({
+    String? procedureName,
     List<DailyCareTask>? todayTasks,
     int? painLevelScore,
   }) {
     return RecoveryCarePlan(
       id: id,
-      procedureName: procedureName,
+      procedureName: procedureName ?? this.procedureName,
       operatingSurgeon: operatingSurgeon,
       hospitalName: hospitalName,
       surgeryDate: surgeryDate,
