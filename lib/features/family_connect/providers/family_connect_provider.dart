@@ -26,7 +26,7 @@ class FamilyConnectNotifier extends StateNotifier<FamilyConnectState> {
   FamilyConnectNotifier()
       : super(FamilyConnectState(
           members: SeedData.initialFamilyMembers,
-          activityLogs: SeedData.initialActivityLogs,
+          activityLogs: [],
         ));
 
   void inviteFamilyMember({

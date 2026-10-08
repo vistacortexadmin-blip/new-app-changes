@@ -253,6 +253,8 @@ class AuthService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_localSessionKey);
+        // FIX FOR C3: Wipe all local health data (reports, profile, reminders) on sign out
+        await prefs.clear();
     } catch (_) {}
 
     _currentUser = null;

@@ -26,6 +26,22 @@ class DoseSchedule {
     this.skipReason,
   });
 
+  Map<String, dynamic> toJson() => {
+    'timeOfDay': timeOfDay.index,
+    'timeString': timeString,
+    'status': status.index,
+    'loggedAt': loggedAt?.toIso8601String(),
+    'skipReason': skipReason,
+  };
+  
+  factory DoseSchedule.fromJson(Map<String, dynamic> json) => DoseSchedule(
+    timeOfDay: DoseTimeOfDay.values[json['timeOfDay']],
+    timeString: json['timeString'],
+    status: AdherenceStatus.values[json['status']],
+    loggedAt: json['loggedAt'] != null ? DateTime.parse(json['loggedAt']) : null,
+    skipReason: json['skipReason'],
+  );
+
   DoseSchedule copyWith({
     AdherenceStatus? status,
     DateTime? loggedAt,
@@ -79,6 +95,34 @@ class MedicineReminder {
 
   bool get isLowSupply => daysOfSupplyRemaining <= 5;
   bool get isCriticalSupply => daysOfSupplyRemaining <= 2;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'medicineName': medicineName,
+    'dosage': dosage,
+    'instructions': instructions,
+    'prescribedFor': prescribedFor,
+    'dailySchedules': dailySchedules.map((e) => e.toJson()).toList(),
+    'totalQuantityAvailable': totalQuantityAvailable,
+    'dailyDoseCount': dailyDoseCount,
+    'startDate': startDate.toIso8601String(),
+    'durationDays': durationDays,
+    'warning': warning,
+  };
+  
+  factory MedicineReminder.fromJson(Map<String, dynamic> json) => MedicineReminder(
+    id: json['id'],
+    medicineName: json['medicineName'],
+    dosage: json['dosage'],
+    instructions: json['instructions'],
+    prescribedFor: json['prescribedFor'],
+    dailySchedules: (json['dailySchedules'] as List).map((e) => DoseSchedule.fromJson(e)).toList(),
+    totalQuantityAvailable: json['totalQuantityAvailable'],
+    dailyDoseCount: json['dailyDoseCount'],
+    startDate: DateTime.parse(json['startDate']),
+    durationDays: json['durationDays'],
+    warning: json['warning'],
+  );
 
   MedicineReminder copyWith({
     String? id,
@@ -135,4 +179,24 @@ class NextTestReminder {
   }
 
   bool get isOverdue => daysUntilTest < 0 && !isCompleted;
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'testName': testName,
+    'labOrClinicName': labOrClinicName,
+    'scheduledDate': scheduledDate.toIso8601String(),
+    'preparationInstructions': preparationInstructions,
+    'isCompleted': isCompleted,
+    'relatedReportId': relatedReportId,
+  };
+  
+  factory NextTestReminder.fromJson(Map<String, dynamic> json) => NextTestReminder(
+    id: json['id'],
+    testName: json['testName'],
+    labOrClinicName: json['labOrClinicName'],
+    scheduledDate: DateTime.parse(json['scheduledDate']),
+    preparationInstructions: json['preparationInstructions'],
+    isCompleted: json['isCompleted'],
+    relatedReportId: json['relatedReportId'],
+  );
+
 }
