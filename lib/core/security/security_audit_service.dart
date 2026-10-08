@@ -1,6 +1,7 @@
 ﻿import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 import '../services/analytics_service.dart';
 import 'security_audit_model.dart';
@@ -29,10 +30,11 @@ class SecurityAuditService {
   Future<void> initialize() async {
     if (_isInitialized) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedLogs = prefs.getStringList(_storageKey);
-
-      if (savedLogs != null && savedLogs.isNotEmpty) {
+      const storage = FlutterSecureStorage();
+      final logsStr = await storage.read(key: _storageKey);
+      
+      if (logsStr != null) {
+        final savedLogs = List<String>.from(jsonDecode(logsStr));
         _ledger = savedLogs.map((item) => SecurityAuditEvent.fromJson(item)).toList();
       } else {
         // Populate initial verified seed trail for demo & compliance baseline
@@ -248,12 +250,12 @@ class SecurityAuditService {
     } catch (_) {}
   }
 
-  /// Persists in SharedPreferences
+  /// Persists in SecureStorage
   Future<void> _persistLedger() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
+      const storage = FlutterSecureStorage();
       final stringList = _ledger.map((e) => e.toJson()).toList();
-      await prefs.setStringList(_storageKey, stringList);
+      await storage.write(key: _storageKey, value: jsonEncode(stringList));
     } catch (e) {
       if (kDebugMode) debugPrint('[SecurityAudit] Failed to persist ledger: $e');
     }

@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/report_model.dart';
 import '../../../core/storage/seed_data.dart';
@@ -46,7 +49,37 @@ class ReportsState {
 
 class ReportsNotifier extends StateNotifier<ReportsState> {
   ReportsNotifier()
-      : super(ReportsState(reports: SeedData.initialReports));
+      : super(ReportsState(reports: SeedData.initialReports)) {
+    _loadState();
+  }
+
+  final _storage = const FlutterSecureStorage();
+
+  Future<void> _saveState() async {
+    try {
+      final jsonList = state.reports.map((r) => r.toJson()).toList();
+      await _storage.write(key: 'secure_medical_reports', value: jsonEncode(jsonList));
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ReportsNotifier] Error saving state: $e');
+    }
+  }
+
+  Future<void> _loadState() async {
+    try {
+      final reportsStr = await _storage.read(key: 'secure_medical_reports');
+      List<MedicalReport> loadedReports = SeedData.initialReports;
+      
+      if (reportsStr != null) {
+        final decoded = jsonDecode(reportsStr) as List;
+        loadedReports = decoded.map((r) => MedicalReport.fromJson(r)).toList();
+      }
+      
+      state = state.copyWith(reports: loadedReports);
+    } catch (e) {
+      if (kDebugMode) debugPrint('[ReportsNotifier] Error loading state: $e');
+    }
+  }
+
 
   void setCategoryFilter(ReportCategory? category) {
     if (state.selectedCategory == category) {

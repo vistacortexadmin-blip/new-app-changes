@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/reminder_model.dart';
+import 'dart:convert';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/storage/seed_data.dart';
 import '../../../core/services/notification_service.dart';
 
@@ -71,7 +73,46 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
       : super(RemindersState(
           medicines: SeedData.initialReminders,
           nextTests: SeedData.initialNextTests,
-        ));
+        )) {
+    _loadState();
+  }
+
+  final _storage = const FlutterSecureStorage();
+
+  Future<void> _saveState() async {
+    try {
+      final medsJson = state.medicines.map((m) => m.toJson()).toList();
+      final testsJson = state.nextTests.map((t) => t.toJson()).toList();
+      await _storage.write(key: 'secure_reminders_medicines', value: jsonEncode(medsJson));
+      await _storage.write(key: 'secure_reminders_tests', value: jsonEncode(testsJson));
+    } catch (e) {
+      if (kDebugMode) debugPrint('[RemindersNotifier] Error saving state: $e');
+    }
+  }
+
+  Future<void> _loadState() async {
+    try {
+      final medsStr = await _storage.read(key: 'secure_reminders_medicines');
+      final testsStr = await _storage.read(key: 'secure_reminders_tests');
+      
+      List<MedicineReminder> loadedMeds = SeedData.initialReminders;
+      List<NextTestReminder> loadedTests = SeedData.initialNextTests;
+      
+      if (medsStr != null) {
+        final decodedMeds = jsonDecode(medsStr) as List;
+        loadedMeds = decodedMeds.map((m) => MedicineReminder.fromJson(m)).toList();
+      }
+      if (testsStr != null) {
+        final decodedTests = jsonDecode(testsStr) as List;
+        loadedTests = decodedTests.map((t) => NextTestReminder.fromJson(t)).toList();
+      }
+      
+      state = state.copyWith(medicines: loadedMeds, nextTests: loadedTests);
+    } catch (e) {
+      if (kDebugMode) debugPrint('[RemindersNotifier] Error loading state: $e');
+    }
+  }
+
 
   void setTimeFilter(DoseTimeOfDay filter) {
     state = state.copyWith(selectedTimeFilter: filter);

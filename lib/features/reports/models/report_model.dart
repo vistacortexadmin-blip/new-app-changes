@@ -80,6 +80,34 @@ class MedicalReport {
     this.isFlagged = false,
   });
 
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'category': category.index,
+    'labProvider': labProvider,
+    'doctorName': doctorName,
+    'reportDate': reportDate.toIso8601String(),
+    'pdfAssetPath': pdfAssetPath,
+    'summaryPlainLanguage': summaryPlainLanguage,
+    'questionsForDoctor': questionsForDoctor,
+    'parameters': parameters.map((e) => e.toJson()).toList(),
+    'isFlagged': isFlagged,
+  };
+
+  factory MedicalReport.fromJson(Map<String, dynamic> json) => MedicalReport(
+    id: json['id'],
+    title: json['title'],
+    category: ReportCategory.values[json['category']],
+    labProvider: json['labProvider'],
+    doctorName: json['doctorName'],
+    reportDate: DateTime.parse(json['reportDate']),
+    pdfAssetPath: json['pdfAssetPath'],
+    summaryPlainLanguage: json['summaryPlainLanguage'],
+    questionsForDoctor: List<String>.from(json['questionsForDoctor']),
+    parameters: (json['parameters'] as List).map((e) => TestParameter.fromJson(e)).toList(),
+    isFlagged: json['isFlagged'],
+  );
+
   String get categoryDisplayName {
     switch (category) {
       case ReportCategory.bloodTest:

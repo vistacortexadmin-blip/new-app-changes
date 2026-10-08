@@ -70,3 +70,27 @@ This document covers the implementation of **Task 4 (Health Adherence & UI)** an
 - `POST_NOTIFICATIONS`: Required for Android 13+.
 - `SCHEDULE_EXACT_ALARM`: Required for precise medicine reminders.
 - `RECEIVE_BOOT_COMPLETED`: Reschedules alarms if the user restarts their phone.
+
+## Security & Privacy Guardrails (CISO Assessment Phase 1-3)
+
+A comprehensive security overhaul was conducted to address all critical findings from the CISO Security Assessment Report, hardening the app against unauthorized access, data leaks, and HIPAA violations:
+
+### 1. Identity & Authentication Hardening
+- **Removed Critical Backdoor**: Stripped out the `createLocalSession` fallback in `AuthService` that allowed attackers to bypass Firebase and log in using just an email address (C2).
+- **Password Policies**: Increased minimum password length to 10 characters (M1).
+- **Anti-Enumeration**: Standardized Firebase login errors to a single generic message (*"Invalid credentials or sign-in failed"*) to prevent attackers from discovering if a patient's email exists in the system (M1).
+
+### 2. PHI Protection & Privacy
+- **Encrypted Local Storage**: Migrated all offline patient data (Profile, Reminders, Reports, and Security Audit Ledger) from insecure `SharedPreferences` to lutter_secure_storage (Android Keystore / iOS Keychain) (C3).
+- **Secure Data Wipe**: Engineered a complete `storage.deleteAll()` command that reliably destroys all decrypted local PHI the moment a user signs out (C3).
+- **Analytics Sanitization**: Removed gender and other demographic tracking from Firebase Analytics events to prevent HIPAA violations (M5).
+- **Silent Telemetry**: Disabled internal `debugPrint` logging in release mode to prevent variable leaks to `logcat` on production devices (M5).
+- **Screenshot Blocking**: Enabled `FLAG_SECURE` on the Android `MainActivity` to block screenshots, screen recordings, and blank out the app preview in the OS recent-apps switcher (H5).
+- **Mock Data Cleaned**: Purged hardcoded clinical AI mock answers (H1) and fake medical records (H2) that risked contaminating real patient data or dispensing false medical advice.
+
+### 3. Infrastructure & Architecture Security
+- **Firebase App Check**: Activated Firebase App Check with device attestation (Play Integrity on Android, DeviceCheck on iOS) to block botnets, emulators, and unauthorized API calls (M2).
+- **Secure File Export**: Replaced the highly insecure clipboard copy mechanism for the Security Audit Log with a private temporary file export via the OS Share Sheet (M6).
+- **Release Obfuscation**: Enabled R8/Proguard code shrinking and obfuscation in uild.gradle.kts to protect intellectual property and deter reverse-engineering (H4).
+- **Timezone Precision**: Replaced UTC offset guessing with lutter_timezone to query the OS for the actual IANA timezone string, guaranteeing safe medication alerts across daylight saving boundaries (L5).
+- **UI Honesty**: Removed false claims about encryption and unbuilt security features from the Settings and Family Invite UI, and added placeholders for Account Deletion (H3/M7).

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/analytics_service.dart';
 import '../../../core/services/auth_service.dart';
@@ -167,7 +167,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       });
 
       // Save user profile to persistent local storage bound to authenticated UID
-      final prefs = await SharedPreferences.getInstance();
+      const storage = FlutterSecureStorage();
       final currentUser = AuthService().currentUser;
       final currentUid = currentUser?.uid ?? 'local_user';
       if (currentUser != null && _nameController.text.trim().isNotEmpty) {
@@ -177,18 +177,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           if (kDebugMode) debugPrint('[ProfileSetup] Notice updating Firebase displayName: $e');
         }
       }
-      await prefs.setBool('profile_completed', true);
-      await prefs.setString('profile_owner_uid', currentUid);
-      await prefs.setString('user_name', _nameController.text.trim());
-      await prefs.setString('user_age', _ageController.text.trim());
-      await prefs.setString('user_gender', _selectedGender);
-      await prefs.setString('user_weight', _weightController.text.trim());
-      await prefs.setString('user_height', _heightController.text.trim());
-      await prefs.setString('user_blood_group', _selectedBloodGroup);
+      await storage.write(key: 'profile_completed', value: 'true');
+      await storage.write(key: 'profile_owner_uid', value: currentUid);
+      await storage.write(key: 'user_name', value: _nameController.text.trim());
+      await storage.write(key: 'user_age', value: _ageController.text.trim());
+      await storage.write(key: 'user_gender', value: _selectedGender);
+      await storage.write(key: 'user_weight', value: _weightController.text.trim());
+      await storage.write(key: 'user_height', value: _heightController.text.trim());
+      await storage.write(key: 'user_blood_group', value: _selectedBloodGroup);
       if (_profileImage != null) {
-        await prefs.setString('user_image_path', _profileImage!.path);
+        await storage.write(key: 'user_image_path', value: _profileImage!.path);
       }
-      await prefs.remove('user_avatar_emoji');
+      await storage.delete(key: 'user_avatar_emoji');
 
       if (mounted) {
         // Navigate to Dashboard, clearing entire navigation stack

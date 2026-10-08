@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../../core/services/analytics_service.dart';
@@ -50,9 +50,9 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final bool profileCompleted = prefs.getBool('profile_completed') ?? false;
-    final String? profileOwner = prefs.getString('profile_owner_uid');
+    const storage = FlutterSecureStorage();
+    final bool profileCompleted = (await storage.read(key: 'profile_completed')) == 'true';
+    final String? profileOwner = await storage.read(key: 'profile_owner_uid');
     if (!mounted) return;
 
     // Check both local storage AND if the user already has a configured name in Firebase

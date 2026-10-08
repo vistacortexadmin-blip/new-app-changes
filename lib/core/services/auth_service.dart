@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'analytics_service.dart';
 
 /// Unified AuthUser model supporting both live Firebase and resilient Local Dev sessions
@@ -101,8 +101,8 @@ class AuthService {
 
   Future<AuthUser?> _getLocalSession() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final sessionStr = prefs.getString(_localSessionKey);
+      const storage = FlutterSecureStorage();
+      final sessionStr = await storage.read(key: _localSessionKey);
       if (sessionStr != null) {
         return AuthUser.fromJson(jsonDecode(sessionStr) as Map<String, dynamic>);
       }
@@ -251,10 +251,10 @@ class AuthService {
     }
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_localSessionKey);
+      const storage = FlutterSecureStorage();
+      await storage.delete(key: _localSessionKey);
         // FIX FOR C3: Wipe all local health data (reports, profile, reminders) on sign out
-        await prefs.clear();
+        await storage.deleteAll();
     } catch (_) {}
 
     _currentUser = null;

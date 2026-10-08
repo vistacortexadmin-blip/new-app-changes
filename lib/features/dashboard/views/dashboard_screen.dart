@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/config/app_colors.dart';
 import '../../../core/services/auth_service.dart';
 import '../../auth/views/welcome_screen.dart';
@@ -42,14 +42,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Future<void> _loadUserProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final fullName = prefs.getString('user_name');
-    final imagePath = prefs.getString('user_image_path');
-    final age = prefs.getString('user_age');
-    final gender = prefs.getString('user_gender');
-    final weight = prefs.getString('user_weight');
-    final height = prefs.getString('user_height');
-    final bloodGroup = prefs.getString('user_blood_group');
+    const storage = FlutterSecureStorage();
+    final fullName = await storage.read(key: 'user_name');
+    final imagePath = await storage.read(key: 'user_image_path');
+    final age = await storage.read(key: 'user_age');
+    final gender = await storage.read(key: 'user_gender');
+    final weight = await storage.read(key: 'user_weight');
+    final height = await storage.read(key: 'user_height');
+    final bloodGroup = await storage.read(key: 'user_blood_group');
 
     if (mounted) {
       setState(() {
