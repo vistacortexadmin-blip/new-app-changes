@@ -23,7 +23,7 @@ class NotificationService {
     // FIX FOR L5: Read the actual local timezone from the device instead of relying on UTC offsets
     try {
       final timeZoneName = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName.toString()));
+      tz.setLocalLocation(tz.getLocation(timeZoneName.identifier));
     } catch (e) {
       if (kDebugMode) debugPrint('[NotificationService] Failed to set timezone: $e');
     }
