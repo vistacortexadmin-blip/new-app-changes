@@ -74,10 +74,10 @@ class NotificationService {
   }
 
   Future<void> requestPermissions() async {
-    await flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    final androidImplementation = flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    await androidImplementation?.requestNotificationsPermission();
+    await androidImplementation?.requestExactAlarmsPermission();
   }
 
   Future<void> scheduleDailyMedicineReminder({
@@ -118,6 +118,22 @@ class NotificationService {
     tz.TZDateTime scheduledDate = doseTime.subtract(const Duration(minutes: 5));
     
     if (scheduledDate.isBefore(now)) {
+      if (doseTime.isAfter(now)) {
+        // The dose is today and happening in < 5 mins!
+        // To avoid shifting the DAILY alarm to right now permanently, 
+        // we just let the daily recurrence start tomorrow at the proper 5-min early time.
+        // But for today's dose, we fire a one-off immediate alarm!
+        await flutterLocalNotificationsPlugin.zonedSchedule(
+          id + 10000, // Offset ID so it doesn't conflict
+          'Time for your medicine',
+          'It is time to take your scheduled dose.',
+          now.add(const Duration(seconds: 5)),
+          const NotificationDetails(android: AndroidNotificationDetails('medicine_channel_id', 'Medicine Reminders')),
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.wallClockTime,
+        );
+      }
+      
       // Fix DST: use constructor instead of Duration(days: 1)
       scheduledDate = tz.TZDateTime(tz.local, scheduledDate.year, scheduledDate.month, scheduledDate.day + 1, scheduledDate.hour, scheduledDate.minute);
     }
