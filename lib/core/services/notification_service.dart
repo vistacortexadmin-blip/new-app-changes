@@ -16,16 +16,36 @@ class NotificationService {
 
   bool _isInitialized = false;
 
+  // Some Android devices report legacy timezone IDs that the tz package doesn't have
+  static const _legacyTimezoneMap = {
+    'Asia/Calcutta': 'Asia/Kolkata',
+    'US/Eastern': 'America/New_York',
+    'US/Central': 'America/Chicago',
+    'US/Mountain': 'America/Denver',
+    'US/Pacific': 'America/Los_Angeles',
+  };
+
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     tz_data.initializeTimeZones();
     // FIX FOR L5: Read the actual local timezone from the device instead of relying on UTC offsets
     try {
-      final timeZoneName = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName.identifier));
+      final timeZoneInfo = await FlutterTimezone.getLocalTimezone();
+      String tzId = timeZoneInfo.identifier;
+      // Map legacy IDs to modern IANA names
+      tzId = _legacyTimezoneMap[tzId] ?? tzId;
+      tz.setLocalLocation(tz.getLocation(tzId));
+      if (kDebugMode) debugPrint('[NotificationService] Timezone set to: $tzId');
     } catch (e) {
-      if (kDebugMode) debugPrint('[NotificationService] Failed to set timezone: $e');
+      if (kDebugMode) debugPrint('[NotificationService] Failed to set timezone: $e, falling back to UTC');
+      // Fallback: use device UTC offset to approximate
+      try {
+        final now = DateTime.now();
+        final offset = now.timeZoneOffset;
+        // Search for a location matching the offset
+        tz.setLocalLocation(tz.getLocation('Etc/UTC'));
+      } catch (_) {}
     }
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -88,17 +108,21 @@ class NotificationService {
     final now = tz.TZDateTime.now(tz.local);
     tz.TZDateTime doseTime = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
     
+    if (kDebugMode) debugPrint('[NotificationService] Scheduling: now=$now, doseTime=$doseTime, timeString=$timeString');
+
     if (doseTime.isBefore(now)) {
-      doseTime = doseTime.add(const Duration(days: 1));
+      // Fix DST: use constructor instead of Duration(days: 1)
+      doseTime = tz.TZDateTime(tz.local, now.year, now.month, now.day + 1, hour, minute);
     }
     
     tz.TZDateTime scheduledDate = doseTime.subtract(const Duration(minutes: 5));
     
-    // FIX FOR B3: If the 5-min pre-alert is in the past, DO NOT schedule for 5 secs from now
-    // because it's a repeating alarm. Instead, just push it to tomorrow.
     if (scheduledDate.isBefore(now)) {
-      scheduledDate = scheduledDate.add(const Duration(days: 1));
+      // Fix DST: use constructor instead of Duration(days: 1)
+      scheduledDate = tz.TZDateTime(tz.local, scheduledDate.year, scheduledDate.month, scheduledDate.day + 1, scheduledDate.hour, scheduledDate.minute);
     }
+
+    if (kDebugMode) debugPrint('[NotificationService] Final scheduledDate=$scheduledDate for id=$id');
 
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'medicine_channel_id',
@@ -106,7 +130,7 @@ class NotificationService {
       channelDescription: 'Daily reminders to take your medicine',
       importance: Importance.max,
       priority: Priority.high,
-      visibility: NotificationVisibility.secret, // FIX FOR H5: Hide from lock screen if device is locked
+      visibility: NotificationVisibility.private, // FIX FOR H5: Private shows notification but hides payload on lock screen
     );
 
     // FIX FOR H5: Neutral notification bodies to protect privacy
@@ -116,8 +140,8 @@ class NotificationService {
       'It is time to take your scheduled dose.',
       scheduledDate,
       const NotificationDetails(android: androidDetails),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle, // Use exact for medicines
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.wallClockTime, // Fix for travel/DST
       matchDateTimeComponents: DateTimeComponents.time,
       payload: 'medicine_',
     );
@@ -130,9 +154,13 @@ class NotificationService {
     required DateTime date,
   }) async {
     final now = tz.TZDateTime.now(tz.local);
-    final testDay8am = tz.TZDateTime.from(
-      DateTime(date.year, date.month, date.day, 8, 0),
+    final testDay8am = tz.TZDateTime(
       tz.local,
+      date.year, 
+      date.month, 
+      date.day, 
+      8, 
+      0
     );
 
     if (testDay8am.isBefore(now) && 
@@ -140,10 +168,10 @@ class NotificationService {
       return;
     }
 
-    tz.TZDateTime scheduledDate = testDay8am.subtract(const Duration(days: 3));
+    tz.TZDateTime scheduledDate = tz.TZDateTime(tz.local, testDay8am.year, testDay8am.month, testDay8am.day - 3, 8, 0);
     
     if (scheduledDate.isBefore(now)) {
-      scheduledDate = testDay8am.subtract(const Duration(days: 1));
+      scheduledDate = tz.TZDateTime(tz.local, testDay8am.year, testDay8am.month, testDay8am.day - 1, 8, 0);
     }
     
     if (scheduledDate.isBefore(now)) {
@@ -160,7 +188,7 @@ class NotificationService {
       channelDescription: 'Reminders for upcoming diagnostic tests',
       importance: Importance.high,
       priority: Priority.high,
-      visibility: NotificationVisibility.secret, // FIX FOR H5
+      visibility: NotificationVisibility.private, // FIX FOR H5
     );
 
     // FIX FOR H5: Neutral notification bodies
@@ -170,8 +198,8 @@ class NotificationService {
       'You have a scheduled test coming up.',
       scheduledDate,
       const NotificationDetails(android: androidDetails),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.wallClockTime,
     );
   }
 

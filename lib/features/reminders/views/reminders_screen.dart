@@ -822,76 +822,78 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 top: 24,
                 bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Refill ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  Text('Select amount to add:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: 12,
-                    children: [10, 30, 60, 90].map((amount) {
-                      return ChoiceChip(
-                        label: Text('+$amount', style: TextStyle(color: selectedAmount == amount ? Colors.white : AppColors.primary)),
-                        selectedColor: AppColors.primary,
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                        selected: selectedAmount == amount,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setModalState(() {
-                              selectedAmount = amount;
-                              customController.clear();
-                            });
-                          }
-                        },
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: customController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Or enter custom amount',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Refill ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    Text('Select amount to add:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 12,
+                      children: [10, 30, 60, 90].map((amount) {
+                        return ChoiceChip(
+                          label: Text('+$amount', style: TextStyle(color: selectedAmount == amount ? Colors.white : AppColors.primary)),
+                          selectedColor: AppColors.primary,
+                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                          selected: selectedAmount == amount,
+                          onSelected: (selected) {
+                            if (selected) {
+                              setModalState(() {
+                                selectedAmount = amount;
+                                customController.clear();
+                              });
+                            }
+                          },
+                        );
+                      }).toList(),
                     ),
-                    onChanged: (val) {
-                      if (val.isNotEmpty) {
-                        setModalState(() {
-                          selectedAmount = int.tryParse(val) ?? 0;
-                        });
-                      } else {
-                        setModalState(() {
-                          selectedAmount = 30;
-                        });
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: selectedAmount <= 0 ? null : () {
-                        if (Navigator.of(context).canPop()) {
-                          Navigator.of(context).pop();
-                        }
-                        Future.microtask(() {
-                          ref.read(remindersProvider.notifier).refillStock(
-                            medicineId: med.id,
-                            addedQuantity: selectedAmount,
-                          );
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: customController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(
+                        labelText: 'Or enter custom amount',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: Text('Add $selectedAmount Pills', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      onChanged: (val) {
+                        if (val.isNotEmpty) {
+                          setModalState(() {
+                            selectedAmount = int.tryParse(val) ?? 0;
+                          });
+                        } else {
+                          setModalState(() {
+                            selectedAmount = 30;
+                          });
+                        }
+                      },
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: selectedAmount <= 0 ? null : () {
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
+                          Future.microtask(() {
+                            ref.read(remindersProvider.notifier).refillStock(
+                              medicineId: med.id,
+                              addedQuantity: selectedAmount,
+                            );
+                          });
+                        },
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text('Add $selectedAmount Pills', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -918,36 +920,37 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
             top: 24,
             bottom: MediaQuery.of(context).viewInsets.bottom + 24,
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Edit Stock: ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Text('Enter the exact number of pills you currently have:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
-              const SizedBox(height: 16),
-              TextField(
-                controller: customController,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                decoration: InputDecoration(
-                  labelText: 'Current Total Pills',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Edit Stock: ${med.medicineName}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                Text('Enter the exact number of pills you currently have:', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6))),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: customController,
+                  keyboardType: TextInputType.number,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Current Total Pills',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    final exactAmount = int.tryParse(customController.text) ?? med.totalQuantityAvailable;
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
-                    }
-                    Future.microtask(() {
-                      ref.read(remindersProvider.notifier).updateStock(
-                        medicineId: med.id,
-                        exactQuantity: exactAmount,
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final exactAmount = int.tryParse(customController.text) ?? med.totalQuantityAvailable;
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      }
+                      Future.microtask(() {
+                        ref.read(remindersProvider.notifier).updateStock(
+                          medicineId: med.id,
+                          exactQuantity: exactAmount,
                       );
                     });
                   },
@@ -959,6 +962,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                 ),
               ),
             ],
+           ),
           ),
         );
       },
@@ -1176,11 +1180,12 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       title: Text(selectedDate == null ? 'Select Date' : DateFormat('MMM d, yyyy').format(selectedDate!)),
                       trailing: const Icon(Icons.calendar_today),
                       onTap: () async {
+                        final now = DateTime.now();
                         final date = await showDatePicker(
                           context: context,
-                          initialDate: DateTime.now(),
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                          initialDate: selectedDate ?? now,
+                          firstDate: now,
+                          lastDate: now.add(const Duration(days: 365)),
                         );
                         if (date != null) {
                           setModalState(() => selectedDate = date);
@@ -1194,7 +1199,7 @@ class _RemindersScreenState extends ConsumerState<RemindersScreen>
                       onTap: () async {
                         final time = await showTimePicker(
                           context: context,
-                          initialTime: TimeOfDay.now(),
+                          initialTime: selectedTime ?? TimeOfDay.now(),
                         );
                         if (time != null) {
                           setModalState(() => selectedTime = time);
