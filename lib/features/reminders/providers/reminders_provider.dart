@@ -247,7 +247,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
           timeString: schedule.timeString,
         );
       } catch (e) {
-        debugPrint('Failed to schedule medicine reminder: $e');
+        if (kDebugMode) debugPrint('Failed to schedule medicine reminder: $e');
 
       }
     }
@@ -266,7 +266,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
         date: reminder.scheduledDate,
       );
     } catch (e) {
-      debugPrint('Failed to schedule test reminder: $e');
+      if (kDebugMode) debugPrint('Failed to schedule test reminder: $e');
 
     }
   }
@@ -292,7 +292,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     try {
       NotificationService().cancelNotification(_generateStableId(id));
     } catch (e) {
-      debugPrint('Failed to cancel completed test notification: $e');
+      if (kDebugMode) debugPrint('Failed to cancel completed test notification: $e');
     }
   }
 
@@ -304,7 +304,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
         try {
           NotificationService().cancelNotification(_generateStableId(med.id) + i);
         } catch (e) {
-          debugPrint('Failed to cancel medicine notification: $e');
+          if (kDebugMode) debugPrint('Failed to cancel medicine notification: $e');
         }
       }
       
@@ -317,7 +317,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     try {
       NotificationService().cancelNotification(_generateStableId(testId));
     } catch (e) {
-      debugPrint('Failed to cancel test notification: $e');
+      if (kDebugMode) debugPrint('Failed to cancel test notification: $e');
     }
 
     final updatedTests = state.nextTests.where((t) => t.id != testId).toList();

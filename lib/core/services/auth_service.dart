@@ -46,15 +46,9 @@ class AuthUser {
         await fbUser.updateDisplayName(name);
       }
     } catch (e) {
-      debugPrint('[AuthUser] Notice updating Firebase displayName: $e');
+      if (kDebugMode) debugPrint('[AuthUser] Notice updating Firebase displayName: $e');
     }
-    // Update local cached session if in local mode
-    if (isLocalDemo) {
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('vistacortex_local_session', jsonEncode(toJson()));
-      } catch (_) {}
-    }
+    
   }
 }
 
@@ -100,10 +94,8 @@ class AuthService {
         }
       });
     } catch (e) {
-      debugPrint('[Auth] Firebase authStateChanges notice: $e');
-      final localUser = await _getLocalSession();
-      _currentUser = localUser;
-      _authController.add(_currentUser);
+      if (kDebugMode) debugPrint('[Auth] Firebase authStateChanges notice: $e');
+      
     }
   }
 
@@ -115,47 +107,18 @@ class AuthService {
         return AuthUser.fromJson(jsonDecode(sessionStr) as Map<String, dynamic>);
       }
     } catch (e) {
-      debugPrint('[Auth] Error reading local session: $e');
+      if (kDebugMode) debugPrint('[Auth] Error reading local session: $e');
     }
     return null;
   }
 
-  Future<AuthUser> createLocalSession(String email, {String? displayName, String? photoUrl}) async {
-    final uid = 'dev_${email.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
-    final user = AuthUser(
-      uid: uid,
-      email: email,
-      displayName: displayName,
-      photoUrl: photoUrl,
-      isLocalDemo: true,
-    );
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_localSessionKey, jsonEncode(user.toJson()));
-    } catch (e) {
-      debugPrint('[Auth] Error persisting local session: $e');
-    }
-    _currentUser = user;
-    _authController.add(user);
-    return user;
-  }
+  
 
-  bool isConfigurationNotFoundError(dynamic e) {
-    final str = e.toString().toUpperCase();
-    final msg = (e is FirebaseAuthException ? (e.message ?? '') : '').toUpperCase();
-    final code = (e is FirebaseAuthException ? e.code : '').toLowerCase();
-    return str.contains('CONFIGURATION_NOT_FOUND') ||
-        msg.contains('CONFIGURATION_NOT_FOUND') ||
-        str.contains('CONFIGURATION-NOT-FOUND') ||
-        code == 'configuration-not-found' ||
-        (code == 'unknown' && (str.contains('INTERNAL ERROR') || msg.contains('INTERNAL ERROR')));
-  }
+  
 
   /// Formats raw Firebase exceptions into friendly user messages
   String formatAuthError(dynamic error) {
-    if (isConfigurationNotFoundError(error)) {
-      return 'Firebase Authentication is not enabled in Firebase Console. Please enable Email/Password under Authentication > Sign-in method.';
-    }
+    
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'user-not-found':
@@ -195,7 +158,7 @@ class AuthService {
     try {
       googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
-        debugPrint('[Auth] Google sign in cancelled by user');
+        if (kDebugMode) debugPrint('[Auth] Google sign in cancelled by user');
         return null;
       }
 
@@ -220,16 +183,8 @@ class AuthService {
       await _analytics.logLogin('google');
       return _currentUser;
     } catch (e) {
-      debugPrint('[Auth] Error during Google Sign-In: $e');
-      if (isConfigurationNotFoundError(e) && googleUser != null) {
-        debugPrint('[Auth] CONFIGURATION_NOT_FOUND: Logging in via Local Dev fallback');
-        final localUser = await createLocalSession(
-          googleUser.email,
-          displayName: googleUser.displayName,
-          photoUrl: googleUser.photoUrl,
-        );
-        return localUser;
-      }
+      if (kDebugMode) debugPrint('[Auth] Error during Google Sign-In: $e');
+      
       rethrow;
     }
   }
@@ -253,12 +208,8 @@ class AuthService {
       await _analytics.logLogin('email');
       return _currentUser!;
     } catch (e) {
-      debugPrint('[Auth] Email Sign-In error: $e');
-      if (isConfigurationNotFoundError(e)) {
-        debugPrint('[Auth] CONFIGURATION_NOT_FOUND: Falling back to local dev session');
-        final localUser = await createLocalSession(email.trim());
-        return localUser;
-      }
+      if (kDebugMode) debugPrint('[Auth] Email Sign-In error: $e');
+      
       rethrow;
     }
   }
@@ -282,12 +233,8 @@ class AuthService {
       await _analytics.logSignUp('email');
       return _currentUser!;
     } catch (e) {
-      debugPrint('[Auth] Email Sign-Up error: $e');
-      if (isConfigurationNotFoundError(e)) {
-        debugPrint('[Auth] CONFIGURATION_NOT_FOUND: Falling back to local dev session');
-        final localUser = await createLocalSession(email.trim());
-        return localUser;
-      }
+      if (kDebugMode) debugPrint('[Auth] Email Sign-Up error: $e');
+      
       rethrow;
     }
   }
@@ -300,7 +247,7 @@ class AuthService {
         _googleSignIn.signOut(),
       ]);
     } catch (e) {
-      debugPrint('[Auth] Firebase signout notice: $e');
+      if (kDebugMode) debugPrint('[Auth] Firebase signout notice: $e');
     }
 
     try {

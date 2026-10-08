@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -45,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _navigatePostAuth({bool forceOnboarding = false}) async {
     final currentUser = _authService.currentUser;
     if (currentUser == null) {
-      debugPrint('[Security] No active authenticated session found.');
+      if (kDebugMode) debugPrint('[Security] No active authenticated session found.');
       return;
     }
 
@@ -92,7 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
           await _navigatePostAuth(forceOnboarding: _isSignUp);
         }
       } catch (e) {
-        debugPrint('[Auth] Sign In / Sign Up error: $e');
+        if (kDebugMode) debugPrint('[Auth] Sign In / Sign Up error: $e');
         final errorMsg = _authService.formatAuthError(e);
         if (mounted) {
           // If email is already in use during signup, offer auto-toggle to Sign In
@@ -144,10 +145,10 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         await _navigatePostAuth();
       } else {
-        debugPrint('[Auth] Google sign in was cancelled by user');
+        if (kDebugMode) debugPrint('[Auth] Google sign in was cancelled by user');
       }
     } catch (e) {
-      debugPrint('[Auth] Google Sign In error: $e');
+      if (kDebugMode) debugPrint('[Auth] Google Sign In error: $e');
       final errorMsg = _authService.formatAuthError(e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -368,8 +369,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             if (val == null || val.trim().isEmpty) {
                               return 'Please enter your password';
                             }
-                            if (val.length < 6) {
-                              return 'Password must be at least 6 characters';
+                            if (val.length < 10) {
+                              return 'Password must be at least 10 characters';
                             }
                             return null;
                           },

@@ -38,7 +38,7 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (details) {
-        debugPrint('Notification clicked: ');
+        if (kDebugMode) debugPrint('Notification clicked: ');
       },
     );
 

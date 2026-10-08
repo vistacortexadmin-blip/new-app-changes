@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -12,7 +13,7 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
   } catch (e) {
-    debugPrint('Firebase initialization notice: $e');
+    if (kDebugMode) debugPrint('Firebase initialization notice: $e');
   }
 
   // Initialize and request notification permissions
@@ -21,7 +22,7 @@ void main() async {
     await notificationService.initialize();
     await notificationService.requestPermissions();
   } catch (e) {
-    debugPrint('Notification initialization notice: $e');
+    if (kDebugMode) debugPrint('Notification initialization notice: $e');
   }
 
   runApp(

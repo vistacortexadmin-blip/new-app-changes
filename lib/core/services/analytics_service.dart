@@ -17,9 +17,9 @@ class AnalyticsService {
   Future<void> logScreen(String screenName) async {
     try {
       await _firebaseAnalytics.logScreenView(screenName: screenName);
-      debugPrint('[Analytics] Screen viewed: $screenName');
+      if (kDebugMode) debugPrint('[Analytics] Screen viewed: $screenName');
     } catch (e) {
-      debugPrint('[Analytics] logScreen notice: $e');
+      if (kDebugMode) debugPrint('[Analytics] logScreen notice: $e');
     }
   }
 
@@ -27,9 +27,9 @@ class AnalyticsService {
   Future<void> logLogin(String method) async {
     try {
       await _firebaseAnalytics.logLogin(loginMethod: method);
-      debugPrint('[Analytics] User logged in via: $method');
+      if (kDebugMode) debugPrint('[Analytics] User logged in via: $method');
     } catch (e) {
-      debugPrint('[Analytics] logLogin notice: $e');
+      if (kDebugMode) debugPrint('[Analytics] logLogin notice: $e');
     }
   }
 
@@ -37,9 +37,9 @@ class AnalyticsService {
   Future<void> logSignUp(String method) async {
     try {
       await _firebaseAnalytics.logSignUp(signUpMethod: method);
-      debugPrint('[Analytics] User signed up via: $method');
+      if (kDebugMode) debugPrint('[Analytics] User signed up via: $method');
     } catch (e) {
-      debugPrint('[Analytics] logSignUp notice: $e');
+      if (kDebugMode) debugPrint('[Analytics] logSignUp notice: $e');
     }
   }
 
@@ -50,9 +50,9 @@ class AnalyticsService {
         name: name,
         parameters: parameters,
       );
-      debugPrint('[Analytics] Event logged: $name with params: $parameters');
+      if (kDebugMode) debugPrint('[Analytics] Event logged: $name with params: $parameters');
     } catch (e) {
-      debugPrint('[Analytics] logEvent notice: $e');
+      if (kDebugMode) debugPrint('[Analytics] logEvent notice: $e');
     }
   }
 }

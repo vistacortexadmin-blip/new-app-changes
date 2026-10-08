@@ -39,9 +39,9 @@ class SecurityAuditService {
         await _seedInitialAuditEvents();
       }
       _isInitialized = true;
-      debugPrint('[SecurityAudit] Initialized ledger with ${_ledger.length} events.');
+      if (kDebugMode) debugPrint('[SecurityAudit] Initialized ledger with ${_ledger.length} events.');
     } catch (e) {
-      debugPrint('[SecurityAudit] Initialization error: $e');
+      if (kDebugMode) debugPrint('[SecurityAudit] Initialization error: $e');
       if (_ledger.isEmpty) {
         await _seedInitialAuditEvents();
       }
@@ -117,7 +117,7 @@ class SecurityAuditService {
     // Forward high-priority security events to remote analytics sink
     _forwardToRemoteSink(event);
 
-    debugPrint('[SecurityAudit] Logged ${event.actionType.name} [Hash: ${event.hash.substring(0, 8)}...]');
+    if (kDebugMode) debugPrint('[SecurityAudit] Logged ${event.actionType.name} [Hash: ${event.hash.substring(0, 8)}...]');
     return event;
   }
 
@@ -220,7 +220,7 @@ class SecurityAuditService {
       _recentPhiAccessTimestamps.add(now);
       _recentPhiAccessTimestamps.removeWhere((t) => now.difference(t).inSeconds > 30);
       if (_recentPhiAccessTimestamps.length > 5) {
-        debugPrint('[SecurityAudit WARNING] Rapid PHI access anomaly detected: ${_recentPhiAccessTimestamps.length} reads in 30s');
+        if (kDebugMode) debugPrint('[SecurityAudit WARNING] Rapid PHI access anomaly detected: ${_recentPhiAccessTimestamps.length} reads in 30s');
       }
     }
 
@@ -228,7 +228,7 @@ class SecurityAuditService {
     if (event.actionType == AuditActionType.authLoginFailure) {
       _consecutiveAuthFailures++;
       if (_consecutiveAuthFailures >= 3) {
-        debugPrint('[SecurityAudit CRITICAL] Multiple authentication failures detected: $_consecutiveAuthFailures attempts');
+        if (kDebugMode) debugPrint('[SecurityAudit CRITICAL] Multiple authentication failures detected: $_consecutiveAuthFailures attempts');
       }
     } else if (event.actionType == AuditActionType.authLoginSuccess) {
       _consecutiveAuthFailures = 0;
@@ -255,7 +255,7 @@ class SecurityAuditService {
       final stringList = _ledger.map((e) => e.toJson()).toList();
       await prefs.setStringList(_storageKey, stringList);
     } catch (e) {
-      debugPrint('[SecurityAudit] Failed to persist ledger: $e');
+      if (kDebugMode) debugPrint('[SecurityAudit] Failed to persist ledger: $e');
     }
   }
 

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -61,7 +62,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         });
       }
     } catch (e) {
-      debugPrint('[ProfileSetup] Error picking image: $e');
+      if (kDebugMode) debugPrint('[ProfileSetup] Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -161,7 +162,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       _analytics.logEvent('profile_completed', {
         'has_name': _nameController.text.isNotEmpty,
-        'gender': _selectedGender,
         'has_family_sync': _syncFamily,
         'has_image': _profileImage != null,
       });
@@ -174,7 +174,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         try {
           await currentUser.updateDisplayName(_nameController.text.trim());
         } catch (e) {
-          debugPrint('[ProfileSetup] Notice updating Firebase displayName: $e');
+          if (kDebugMode) debugPrint('[ProfileSetup] Notice updating Firebase displayName: $e');
         }
       }
       await prefs.setBool('profile_completed', true);
