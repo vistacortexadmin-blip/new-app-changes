@@ -20,11 +20,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
       'text': 'Hello! 👋 I am your VistaCortex AI health assistant. I can help explain your lab test reports, track your medications, or answer recovery questions.',
       'time': 'Just now',
     },
-    {
-      'isUser': false,
-      'text': 'Your recent CBC blood test looks great! All parameters are within the healthy normal range.',
-      'time': 'Just now',
-    },
   ];
 
   final List<String> _suggestions = [
@@ -56,14 +51,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     // Simulate smart AI response
     Future.delayed(const Duration(milliseconds: 600), () {
       if (!mounted) return;
-      String reply = 'Based on your health records, maintaining a balanced diet, staying hydrated, and adhering to your prescribed medications will keep your parameters optimal.';
-      if (text.toLowerCase().contains('cbc') || text.toLowerCase().contains('report') || text.toLowerCase().contains('blood')) {
-        reply = 'Your Complete Blood Count (CBC) was performed recently. Key parameters like Hemoglobin (14.2 g/dL), WBC (6,800 /uL), and Platelets (245,000 /uL) are all in normal healthy ranges.';
-      } else if (text.toLowerCase().contains('dose') || text.toLowerCase().contains('med')) {
-        reply = 'Your next scheduled medication is Metformin (500mg) with dinner at 8:00 PM. Vitamin D3 is scheduled for Sunday morning.';
-      } else if (text.toLowerCase().contains('surgery') || text.toLowerCase().contains('recovery')) {
-        reply = 'Your surgery recovery protocol recommends gentle 10-minute walks, maintaining hydration, and doing breathing exercises 3 times daily.';
-      }
+      String reply = 'AI Analysis backend is currently disconnected. Please connect to a secure VistaCortex clinical backend to ask questions about your health records.';
       setState(() {
         _messages.add({
           'isUser': false,

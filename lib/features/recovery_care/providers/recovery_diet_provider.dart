@@ -37,7 +37,7 @@ class RecoveryDietState {
 class RecoveryDietNotifier extends StateNotifier<RecoveryDietState> {
   RecoveryDietNotifier()
       : super(RecoveryDietState(
-          recoveryPlan: SeedData.initialRecoveryPlan,
+          recoveryPlan: SeedData.initialDietPlan,
           dietPlan: SeedData.initialDietPlan,
         ));
 

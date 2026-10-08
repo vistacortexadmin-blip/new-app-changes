@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/foundation.dart';
 import '../models/reminder_model.dart';
 import '../../../core/storage/seed_data.dart';
 import '../../../core/services/notification_service.dart';
@@ -58,6 +57,15 @@ class RemindersState {
   }
 }
 
+
+int _generateStableId(String id) {
+  int hash = 0;
+  for (int i = 0; i < id.length; i++) {
+    hash = (31 * hash + id.codeUnitAt(i)) & 0x7FFFFFFF;
+  }
+  return hash;
+}
+
 class RemindersNotifier extends StateNotifier<RemindersState> {
   RemindersNotifier()
       : super(RemindersState(
@@ -75,17 +83,11 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
   }) {
     final updatedMedicines = state.medicines.map((med) {
       if (med.id == medicineId) {
-<<<<<<< Updated upstream
         bool wasPending = false;
         final updatedSchedules = med.dailySchedules.map((schedule) {
           if (schedule.timeOfDay == timeOfDay && schedule.status == AdherenceStatus.pending) {
             wasPending = true;
-=======
-        bool changed = false;
-        final updatedSchedules = med.dailySchedules.map((schedule) {
-          if (schedule.timeOfDay == timeOfDay && schedule.status == AdherenceStatus.pending) {
-            changed = true;
->>>>>>> Stashed changes
+
             return schedule.copyWith(
               status: AdherenceStatus.taken,
               loggedAt: DateTime.now(),
@@ -94,7 +96,6 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
           return schedule;
         }).toList();
 
-<<<<<<< Updated upstream
         if (wasPending) {
           final newQuantity = (med.totalQuantityAvailable - 1).clamp(0, 9999);
           final updatedMed = med.copyWith(
@@ -104,21 +105,13 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
           
           if (updatedMed.daysOfSupplyRemaining <= 3 && updatedMed.daysOfSupplyRemaining > 0) {
             NotificationService().showRefillWarning(
-              id: updatedMed.id.hashCode,
+              id: _generateStableId(updatedMed.id),
               medicineName: updatedMed.medicineName,
               daysLeft: updatedMed.daysOfSupplyRemaining,
             );
           }
           return updatedMed;
-=======
-        if (changed) {
-          // Decrement 1 pill from quantity count
-          final newQuantity = (med.totalQuantityAvailable - 1).clamp(0, 999);
-          return med.copyWith(
-            dailySchedules: updatedSchedules,
-            totalQuantityAvailable: newQuantity,
-          );
->>>>>>> Stashed changes
+
         }
       }
       return med;
@@ -130,7 +123,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     for (final med in state.lowSupplyMedicines) {
       if (med.id == medicineId && med.daysOfSupplyRemaining <= 3 && med.daysOfSupplyRemaining > 0) {
         NotificationService().showRefillWarning(
-          id: med.id.hashCode,
+          id: _generateStableId(med.id),
           medicineName: med.medicineName,
           daysLeft: med.daysOfSupplyRemaining,
         );
@@ -165,7 +158,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
         
         if (updatedMed.daysOfSupplyRemaining <= 3 && updatedMed.daysOfSupplyRemaining > 0) {
           NotificationService().showRefillWarning(
-            id: updatedMed.id.hashCode,
+            id: _generateStableId(updatedMed.id),
             medicineName: updatedMed.medicineName,
             daysLeft: updatedMed.daysOfSupplyRemaining,
           );
@@ -176,20 +169,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     }).toList();
 
     state = state.copyWith(medicines: updatedMeds);
-<<<<<<< Updated upstream
-=======
 
-    // Check for low stock warnings after taking doses
-    for (final med in state.lowSupplyMedicines) {
-      if (med.daysOfSupplyRemaining <= 3 && med.daysOfSupplyRemaining > 0) {
-        NotificationService().showRefillWarning(
-          id: med.id.hashCode,
-          medicineName: med.medicineName,
-          daysLeft: med.daysOfSupplyRemaining,
-        );
-      }
-    }
->>>>>>> Stashed changes
   }
 
   void markDoseSkipped({
@@ -260,18 +240,15 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
       final schedule = reminder.dailySchedules[i];
       try {
         NotificationService().scheduleDailyMedicineReminder(
-          id: reminder.id.hashCode + i, // Unique int ID for local notifications
+          id: _generateStableId(reminder.id) + i, // Unique int ID for local notifications
           medicineName: reminder.medicineName,
           dosage: reminder.dosage,
           timeOfDay: schedule.timeOfDay,
           timeString: schedule.timeString,
         );
       } catch (e) {
-<<<<<<< Updated upstream
         debugPrint('Failed to schedule medicine reminder: $e');
-=======
-        debugPrint('Error scheduling daily medicine reminder: $e');
->>>>>>> Stashed changes
+
       }
     }
   
@@ -283,17 +260,14 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     
     try {
       NotificationService().scheduleTestReminder(
-        id: reminder.id.hashCode,
+        id: _generateStableId(reminder.id),
         testName: reminder.testName,
         labName: reminder.labOrClinicName,
         date: reminder.scheduledDate,
       );
     } catch (e) {
-<<<<<<< Updated upstream
       debugPrint('Failed to schedule test reminder: $e');
-=======
-      debugPrint('Error scheduling test reminder: $e');
->>>>>>> Stashed changes
+
     }
   }
 
@@ -316,9 +290,8 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
     state = state.copyWith(nextTests: updatedTests);
     
     try {
-      NotificationService().cancelNotification(id.hashCode);
+      NotificationService().cancelNotification(_generateStableId(id));
     } catch (e) {
-<<<<<<< Updated upstream
       debugPrint('Failed to cancel completed test notification: $e');
     }
   }
@@ -329,7 +302,7 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
       final med = state.medicines[medIndex];
       for (int i = 0; i < med.dailySchedules.length; i++) {
         try {
-          NotificationService().cancelNotification(med.id.hashCode + i);
+          NotificationService().cancelNotification(_generateStableId(med.id) + i);
         } catch (e) {
           debugPrint('Failed to cancel medicine notification: $e');
         }
@@ -342,17 +315,14 @@ class RemindersNotifier extends StateNotifier<RemindersState> {
 
   void deleteTest(String testId) {
     try {
-      NotificationService().cancelNotification(testId.hashCode);
+      NotificationService().cancelNotification(_generateStableId(testId));
     } catch (e) {
       debugPrint('Failed to cancel test notification: $e');
     }
 
     final updatedTests = state.nextTests.where((t) => t.id != testId).toList();
     state = state.copyWith(nextTests: updatedTests);
-=======
-      debugPrint('Error canceling test reminder: $e');
-    }
->>>>>>> Stashed changes
+
   }
 }
 

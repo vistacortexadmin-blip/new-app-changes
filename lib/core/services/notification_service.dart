@@ -1,8 +1,8 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import '../../features/reminders/models/reminder_model.dart';
 
 class NotificationService {
@@ -13,65 +13,43 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  bool _isInitialized = false;
+
   Future<void> initialize() async {
-    tz.initializeTimeZones();
-    final localOffset = DateTime.now().timeZoneOffset;
-    final allLocations = tz.timeZoneDatabase.locations;
-    tz.Location? matchedLocation;
-    for (final entry in allLocations.entries) {
-      final loc = entry.value;
-      if (loc.zones.isNotEmpty) {
-        final zone = loc.currentTimeZone;
-        if (zone.offset == localOffset.inMilliseconds) {
-          matchedLocation = loc;
-          break;
-        }
-      }
-    }
-    tz.setLocalLocation(matchedLocation ?? tz.getLocation('Asia/Kolkata'));
+    if (_isInitialized) return;
+
+    tz_data.initializeTimeZones();
 
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
+        
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
 
-    const InitializationSettings initializationSettings =
-        InitializationSettings(
+    const InitializationSettings initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
-      iOS: null,
+      iOS: initializationSettingsIOS,
     );
 
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
-      onDidReceiveNotificationResponse: (NotificationResponse response) {
-        debugPrint('Notification clicked: ${response.payload}');
+      onDidReceiveNotificationResponse: (details) {
+        debugPrint('Notification clicked: ');
       },
     );
+
+    _isInitialized = true;
   }
 
   Future<void> requestPermissions() async {
-    if (Platform.isAndroid) {
-      final AndroidFlutterLocalNotificationsPlugin? androidImplementation =
-          flutterLocalNotificationsPlugin
-              .resolvePlatformSpecificImplementation<
-                  AndroidFlutterLocalNotificationsPlugin>();
-      await androidImplementation?.requestNotificationsPermission();
-    }
-  }
-
-  Future<void> showTestNotification() async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'test_now_channel',
-      'Instant Test',
-      channelDescription: 'Immediate test notification',
-      importance: Importance.max,
-      priority: Priority.high,
-    );
-    await flutterLocalNotificationsPlugin.show(
-      9999,
-      'Notifications are working!',
-      'VistaCortex will remind you to take your medicines on time.',
-      const NotificationDetails(android: androidDetails),
-    );
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
   }
 
   Future<void> scheduleDailyMedicineReminder({
@@ -85,6 +63,7 @@ class NotificationService {
     if (parts.length != 2) return;
     final timeParts = parts[0].split(':');
     if (timeParts.length != 2) return;
+
     int hour;
     int minute;
     try {
@@ -93,57 +72,46 @@ class NotificationService {
     } catch (_) {
       return; // Invalid time format
     }
+    
     final isPM = parts[1].toUpperCase() == 'PM';
     if (isPM && hour < 12) hour += 12;
     if (!isPM && hour == 12) hour = 0;
 
     final now = tz.TZDateTime.now(tz.local);
-    tz.TZDateTime doseTime =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
-<<<<<<< Updated upstream
-        
-=======
->>>>>>> Stashed changes
-    // If dose time today has already passed, schedule for tomorrow
+    tz.TZDateTime doseTime = tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    
     if (doseTime.isBefore(now)) {
       doseTime = doseTime.add(const Duration(days: 1));
     }
-<<<<<<< Updated upstream
     
-    // Now subtract 5 minutes for the pre-alert
     tz.TZDateTime scheduledDate = doseTime.subtract(const Duration(minutes: 5));
     
-    // If 5 mins before is already in the past (e.g., they just scheduled it for a few minutes from now),
-=======
-    // Now subtract 5 minutes for the pre-alert
-    tz.TZDateTime scheduledDate = doseTime.subtract(const Duration(minutes: 5));
-    // If 5 mins before is already in the past (dose is in < 5 minutes),
->>>>>>> Stashed changes
-    // fire a few seconds from now instead
+    // FIX FOR B3: If the 5-min pre-alert is in the past, DO NOT schedule for 5 secs from now
+    // because it's a repeating alarm. Instead, just push it to tomorrow.
     if (scheduledDate.isBefore(now)) {
-      scheduledDate = now.add(const Duration(seconds: 5));
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'medicine_channel_id',
       'Medicine Reminders',
       channelDescription: 'Daily reminders to take your medicine',
       importance: Importance.max,
       priority: Priority.high,
+      visibility: NotificationVisibility.secret, // FIX FOR H5: Hide from lock screen if device is locked
     );
 
+    // FIX FOR H5: Neutral notification bodies to protect privacy
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
-      'Upcoming Medicine Reminder',
-      'In 5 mins: Take $medicineName ($dosage)',
+      'Time for your medicine',
+      'It is time to take your scheduled dose.',
       scheduledDate,
       const NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents: DateTimeComponents.time,
-      payload: 'medicine_$id',
+      payload: 'medicine_',
     );
   }
 
@@ -158,72 +126,24 @@ class NotificationService {
       DateTime(date.year, date.month, date.day, 8, 0),
       tz.local,
     );
-<<<<<<< Updated upstream
-=======
 
-    // If test date is already past, skip
     if (testDay8am.isBefore(now) && 
         DateTime(date.year, date.month, date.day).isBefore(DateTime(now.year, now.month, now.day))) {
       return;
     }
 
-    // Try 3 days before at 8 AM
     tz.TZDateTime scheduledDate = testDay8am.subtract(const Duration(days: 3));
-    String titleText = 'Upcoming Test in 3 Days';
-    String bodyText = 'Your $testName at $labName is in 3 days. Get prepared!';
-
-    // If 3 days before is already past, try 1 day before
+    
     if (scheduledDate.isBefore(now)) {
       scheduledDate = testDay8am.subtract(const Duration(days: 1));
-      titleText = 'Upcoming Test Tomorrow';
-      bodyText = 'Your $testName at $labName is tomorrow. Stay prepared!';
     }
-
-    // If 1 day before is also past, try morning of test day
+    
     if (scheduledDate.isBefore(now)) {
       scheduledDate = testDay8am;
-      titleText = 'Test Today';
-      bodyText = 'You have $testName at $labName today. Good luck!';
     }
-
-    // If even the morning of test day has passed, fire in 5 seconds
+    
     if (scheduledDate.isBefore(now)) {
-      scheduledDate = now.add(const Duration(seconds: 5));
-      titleText = 'Test Today';
-      bodyText = 'Reminder: You have $testName at $labName today!';
-    }
->>>>>>> Stashed changes
-
-    // If test date is already past, skip
-    if (testDay8am.isBefore(now) && 
-        DateTime(date.year, date.month, date.day).isBefore(DateTime(now.year, now.month, now.day))) {
-      return;
-    }
-
-    // Try 3 days before at 8 AM
-    tz.TZDateTime scheduledDate = testDay8am.subtract(const Duration(days: 3));
-    String titleText = 'Upcoming Test in 3 Days';
-    String bodyText = 'Your $testName at $labName is in 3 days. Get prepared!';
-
-    // If 3 days before is already past, try 1 day before
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = testDay8am.subtract(const Duration(days: 1));
-      titleText = 'Upcoming Test Tomorrow';
-      bodyText = 'Your $testName at $labName is tomorrow. Stay prepared!';
-    }
-
-    // If 1 day before is also past, try morning of test day
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = testDay8am;
-      titleText = 'Test Today';
-      bodyText = 'You have $testName at $labName today. Good luck!';
-    }
-
-    // If even the morning of test day has passed, fire in 5 seconds
-    if (scheduledDate.isBefore(now)) {
-      scheduledDate = now.add(const Duration(seconds: 5));
-      titleText = 'Test Today';
-      bodyText = 'Reminder: You have $testName at $labName today!';
+      scheduledDate = now.add(const Duration(seconds: 5)); // One-off is fine for 5 secs
     }
 
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
@@ -232,17 +152,18 @@ class NotificationService {
       channelDescription: 'Reminders for upcoming diagnostic tests',
       importance: Importance.high,
       priority: Priority.high,
+      visibility: NotificationVisibility.secret, // FIX FOR H5
     );
 
+    // FIX FOR H5: Neutral notification bodies
     await flutterLocalNotificationsPlugin.zonedSchedule(
       id,
-      titleText,
-      bodyText,
+      'Upcoming Diagnostic Test',
+      'You have a scheduled test coming up.',
       scheduledDate,
       const NotificationDetails(android: androidDetails),
       androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
@@ -251,19 +172,20 @@ class NotificationService {
     required String medicineName,
     required int daysLeft,
   }) async {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'refill_channel_id',
-      'Refill Warnings',
-      channelDescription: 'Alerts when medicine stock is running low',
+      'Refill Alerts',
+      channelDescription: 'Alerts when your medicine stock is running low',
       importance: Importance.high,
       priority: Priority.high,
+      visibility: NotificationVisibility.secret, // FIX FOR H5
     );
 
+    // FIX FOR H5: Neutral notification bodies
     await flutterLocalNotificationsPlugin.show(
       id,
       'Low Stock Alert',
-      'Only $daysLeft days of $medicineName remaining. Order a refill!',
+      'One of your medications is running low on stock.',
       const NotificationDetails(android: androidDetails),
     );
   }

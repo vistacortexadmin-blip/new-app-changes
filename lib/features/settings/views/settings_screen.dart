@@ -91,10 +91,7 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: 'Update your login credentials',
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Password reset link sent to your email'),
-                        backgroundColor: AppColors.primary,
-                      ),
+                      const SnackBar(content: Text('Password changes are disabled in this environment.')),
                     );
                   },
                 ),
@@ -227,6 +224,41 @@ class SettingsScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
+            // ─── Account Actions ───
+            _buildSettingsCard(
+              context,
+              children: [
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.download_rounded,
+                  iconColor: const Color(0xFF2563EB),
+                  iconBg: const Color(0xFFEFF6FF),
+                  title: 'Export My Data',
+                  subtitle: 'Download a copy of your health records',
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Export Data feature will be available in the next release.'))
+                    );
+                  },
+                ),
+                const Divider(height: 1),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.delete_forever_rounded,
+                  iconColor: AppColors.error,
+                  iconBg: const Color(0xFFFEF2F2),
+                  title: 'Delete Account',
+                  subtitle: 'Permanently remove your account and data',
+                  titleColor: AppColors.error,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Account deletion will be available in the next release.'))
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
             // ─── Sign Out ───
             _buildSettingsCard(
               context,
@@ -481,7 +513,7 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
         content: Text(
-          'Are you sure you want to sign out of VistaCortex? Your encrypted medical records and security audit logs will remain securely preserved on this device.',
+          'Are you sure you want to sign out of VistaCortex? Your session will be closed safely.',
           style: TextStyle(
             fontSize: 14,
             color: isDark ? const Color(0xFF94A3B8) : AppColors.textSecondary,
