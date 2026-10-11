@@ -95,12 +95,14 @@ class ReportsNotifier extends StateNotifier<ReportsState> {
 
   void addReport(MedicalReport report) {
     state = state.copyWith(reports: [report, ...state.reports]);
+    _saveState();
   }
 
   void deleteReport(String id) {
     state = state.copyWith(
       reports: state.reports.where((r) => r.id != id).toList(),
     );
+    _saveState();
   }
 
   // Parameter historical values across all reports

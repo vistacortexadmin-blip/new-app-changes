@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -135,7 +134,12 @@ class _SecurityAuditScreenState extends State<SecurityAuditScreen> {
                       final tempDir = await getTemporaryDirectory();
                       final file = File('${tempDir.path}/audit_event_${event.id}.json');
                       await file.writeAsString(event.toJson());
-                      await Share.shareXFiles([XFile(file.path)], text: 'Audit Event Proof');
+                      await SharePlus.instance.share(
+                        ShareParams(
+                          files: [XFile(file.path)],
+                          text: 'Audit Event Proof',
+                        ),
+                      );
                       if (context.mounted) Navigator.pop(context);
                     },
                 ),
@@ -192,7 +196,12 @@ class _SecurityAuditScreenState extends State<SecurityAuditScreen> {
                 final tempDir = await getTemporaryDirectory();
                 final file = File('${tempDir.path}/full_audit_package.json');
                 await file.writeAsString(jsonPkg);
-                await Share.shareXFiles([XFile(file.path)], text: 'Compliance Audit Package');
+                await SharePlus.instance.share(
+                  ShareParams(
+                    files: [XFile(file.path)],
+                    text: 'Compliance Audit Package',
+                  ),
+                );
               },
           ),
         ],
