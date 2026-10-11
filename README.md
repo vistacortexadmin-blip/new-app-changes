@@ -1,10 +1,10 @@
-# VistaCortex - Task 4 & 5: Medication Reminders & Local Notifications
+# VistaCortex - Medication Reminders & Local Notifications
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
 [![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart)](https://dart.dev)
 [![Riverpod](https://img.shields.io/badge/State%20Management-Riverpod%202.x-blue)](https://riverpod.dev)
 
-This document covers the implementation of **Task 4 (Health Adherence & UI)** and **Task 5 (Local Notifications & Background Scheduling)** for **VistaCortex**.
+This document covers the implementation of **Task 4 (Health Adherence & UI)**, **Task 5 (Local Notifications & Background Scheduling)**, and **Do Not Disturb (DND) Critical Alert Bypass** for **VistaCortex**.
 
 ---
 
@@ -35,18 +35,29 @@ This document covers the implementation of **Task 4 (Health Adherence & UI)** an
 
 ### 6. Robust Local Notifications (Task 5)
 - **`flutter_local_notifications` v18**: Integrated with Android core library desugaring for full backwards compatibility.
-- **Timezone Support**: Initialized with local device timezones to ensure alarms fire exactly on time.
+- **Timezone Support**: Initialized with local device timezones via `flutter_timezone` (with legacy fallback for `Asia/Calcutta` to `Asia/Kolkata`) to ensure alarms fire exactly on time.
 - **Cascading Test Reminders**: Tests schedule a reminder 3 days before. If that has already passed, it falls back to 1 day before, then the morning of the test.
 - **Pre-Alerts**: Medication reminders fire exactly 5 minutes *before* the scheduled dose time to give the user time to prepare.
+- **Immediate Fallback Alarm**: If a medicine is scheduled with a pre-alert that has already passed (e.g. less than 5 minutes away), an immediate one-off reminder triggers 5 seconds later so today's dose is never missed.
 - **Notification ID Safety**: Generates safe, collision-free integer IDs from object hashes to prevent reminders from overwriting each other.
 - **Automatic Cancellation**: Cancels scheduled test notifications immediately if the user marks the test as completed early.
+
+### 7. Do Not Disturb (DND) Bypass & Critical Medical Alerts (NEW)
+- **Audio Routing via Hardware Alarm Stream**: Configured the notification channel with `AudioAttributesUsage.alarm` and `AndroidNotificationCategory.alarm`. Under Android's default DND configuration, alarm streams are allowed through by default, ensuring life-critical medical reminders ring out loud even if standard notification sounds are silenced.
+- **Approach 1: Channel DND Override (Recommended)**: Built native Kotlin `MethodChannel` (`com.vistacortex/dnd_settings`) that launches Android's native `Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS` with 1 tap, allowing users to toggle on "Override Do Not Disturb" / "Bypass Do Not Disturb" for the `medical_emergency_channel`.
+- **Approach 2: System DND Policy Access**: Native integration launching `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS` with `isNotificationPolicyAccessGranted` inspection for hospital-grade emergency alerts.
+- **In-App DND Settings Modal**: Added a dedicated alert bell icon in the Reminders screen header that opens an interactive bottom sheet to easily configure both Channel Bypass and System DND Access.
+- **Full-Screen Wake Intent**: Configured `fullScreenIntent: true` and `USE_FULL_SCREEN_INTENT` permission to wake the phone display and trigger heads-up alerts over the lock screen.
+- **Pulsing Emergency Vibration**: Integrated custom tactile pulsing pattern `[0, 500, 200, 500, 200, 500]` for high-urgency notifications.
+- **HIPAA Lock-Screen Privacy**: Neutral notification copy (`NotificationVisibility.private`) protects patient confidentiality on lock screens while preserving loud audible reminders.
 
 ---
 
 ## Architecture & State
 
 - **State Management**: `RemindersNotifier` (Riverpod) acts as the single source of truth. All UI actions dispatch methods to this provider.
-- **Notification Service**: A Singleton `NotificationService` handles permission requests, initialization, and scheduling logic. Wrapped in fail-safe `try/catch` blocks at app launch to prevent crash-to-desktop scenarios.
+- **Encrypted Persistence**: All reminder and adherence mutations persist securely to offline encrypted storage (`FlutterSecureStorage`).
+- **Notification Service**: A Singleton `NotificationService` handles permission requests, initialization, channel registrations, and scheduling logic. Wrapped in fail-safe `try/catch` blocks at app launch to prevent crash-to-desktop scenarios.
 - **UI Context Awareness**: The main Floating Action Button (`+`) checks the active Tab. It opens the "Add Medicine" modal on the Doses tab, and the "Add Test" modal on the Tests tab.
 
 ---
@@ -62,14 +73,20 @@ This document covers the implementation of **Task 4 (Health Adherence & UI)** an
    ```bash
    flutter run
    ```
-   *(Note: The emulator must support Android 13+ Notification Permissions)*
+   *(Note: The emulator or physical device must support Android 13+ Notification Permissions)*
 
 ---
 
 ## Permissions (Android)
-- `POST_NOTIFICATIONS`: Required for Android 13+.
-- `SCHEDULE_EXACT_ALARM`: Required for precise medicine reminders.
-- `RECEIVE_BOOT_COMPLETED`: Reschedules alarms if the user restarts their phone.
+- `POST_NOTIFICATIONS`: Required for Android 13+ to display notification banners.
+- `SCHEDULE_EXACT_ALARM`: Required for precise medicine reminders to fire exactly on time.
+- `RECEIVE_BOOT_COMPLETED`: Reschedules alarms automatically if the phone is rebooted.
+- `WAKE_LOCK`: Wakes the device CPU when a scheduled dose is due.
+- `VIBRATE`: Enables distinct emergency tactile vibration feedback.
+- `USE_FULL_SCREEN_INTENT`: Displays heads-up and full-screen alerts over the lock screen and DND.
+- `ACCESS_NOTIFICATION_POLICY`: Allows accessing and managing Do Not Disturb policies for critical medical reminders.
+
+---
 
 ## Security & Privacy Guardrails (CISO Assessment Phase 1-3)
 
@@ -81,7 +98,7 @@ A comprehensive security overhaul was conducted to address all critical findings
 - **Anti-Enumeration**: Standardized Firebase login errors to a single generic message (*"Invalid credentials or sign-in failed"*) to prevent attackers from discovering if a patient's email exists in the system (M1).
 
 ### 2. PHI Protection & Privacy
-- **Encrypted Local Storage**: Migrated all offline patient data (Profile, Reminders, Reports, and Security Audit Ledger) from insecure `SharedPreferences` to lutter_secure_storage (Android Keystore / iOS Keychain) (C3).
+- **Encrypted Local Storage**: Migrated all offline patient data (Profile, Reminders, Reports, and Security Audit Ledger) from insecure `SharedPreferences` to `flutter_secure_storage` (Android Keystore / iOS Keychain) (C3).
 - **Secure Data Wipe**: Engineered a complete `storage.deleteAll()` command that reliably destroys all decrypted local PHI the moment a user signs out (C3).
 - **Analytics Sanitization**: Removed gender and other demographic tracking from Firebase Analytics events to prevent HIPAA violations (M5).
 - **Silent Telemetry**: Disabled internal `debugPrint` logging in release mode to prevent variable leaks to `logcat` on production devices (M5).
@@ -90,7 +107,7 @@ A comprehensive security overhaul was conducted to address all critical findings
 
 ### 3. Infrastructure & Architecture Security
 - **Firebase App Check**: Activated Firebase App Check with device attestation (Play Integrity on Android, DeviceCheck on iOS) to block botnets, emulators, and unauthorized API calls (M2).
-- **Secure File Export**: Replaced the highly insecure clipboard copy mechanism for the Security Audit Log with a private temporary file export via the OS Share Sheet (M6).
-- **Release Obfuscation**: Enabled R8/Proguard code shrinking and obfuscation in uild.gradle.kts to protect intellectual property and deter reverse-engineering (H4).
-- **Timezone Precision**: Replaced UTC offset guessing with lutter_timezone to query the OS for the actual IANA timezone string, guaranteeing safe medication alerts across daylight saving boundaries (L5).
+- **Secure File Export**: Replaced the clipboard copy mechanism for the Security Audit Log with a private temporary file export via the OS Share Sheet (`SharePlus`) (M6).
+- **Release Obfuscation**: Enabled R8/Proguard code shrinking and obfuscation in `build.gradle.kts` to protect intellectual property and deter reverse-engineering (H4).
+- **Timezone Precision**: Replaced UTC offset guessing with `flutter_timezone` to query the OS for the actual IANA timezone string, guaranteeing safe medication alerts across daylight saving boundaries (L5).
 - **UI Honesty**: Removed false claims about encryption and unbuilt security features from the Settings and Family Invite UI, and added placeholders for Account Deletion (H3/M7).

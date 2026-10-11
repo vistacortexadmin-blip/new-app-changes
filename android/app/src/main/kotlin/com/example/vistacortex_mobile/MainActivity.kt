@@ -20,7 +20,7 @@ class MainActivity : FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, DND_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "openChannelNotificationSettings" -> {
-                    val channelId = call.argument<String>("channelId") ?: "medical_emergency_channel"
+                    val channelId = call.argument<String>("channelId") ?: "medical_emergency_channel_v2"
                     try {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             val intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {

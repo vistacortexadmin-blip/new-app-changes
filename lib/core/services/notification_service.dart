@@ -17,7 +17,7 @@ class NotificationService {
   bool _isInitialized = false;
 
   // Dedicated medical notification channel with USAGE_ALARM to bypass DND & silent mode
-  static const String medicineChannelId = 'medical_emergency_channel';
+  static const String medicineChannelId = 'medical_emergency_channel_v2';
   static const String medicineChannelName = 'Medical Emergency Alerts';
   static const String medicineChannelDesc =
       'Critical medical alerts and medicine reminders that bypass Do Not Disturb';
@@ -29,6 +29,7 @@ class NotificationService {
     description: medicineChannelDesc,
     importance: Importance.max,
     playSound: true,
+    sound: const RawResourceAndroidNotificationSound('alarm_loud'),
     enableVibration: true,
     vibrationPattern: Int64List.fromList([0, 500, 200, 500, 200, 500]),
     audioAttributesUsage: AudioAttributesUsage.alarm, // Bypasses standard DND & mute switch
@@ -144,6 +145,9 @@ class NotificationService {
     final androidPlugin = flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
+    try {
+      await androidPlugin?.deleteNotificationChannel('medical_emergency_channel');
+    } catch (_) {}
     await androidPlugin?.createNotificationChannel(medicineChannel);
 
     _isInitialized = true;
@@ -208,6 +212,8 @@ class NotificationService {
       priority: Priority.max,
       category: AndroidNotificationCategory.alarm,
       audioAttributesUsage: AudioAttributesUsage.alarm,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound('alarm_loud'),
       visibility: NotificationVisibility.private, // Private hides payload on lock screen
       fullScreenIntent: true,
       enableVibration: true,
@@ -309,6 +315,8 @@ class NotificationService {
       priority: Priority.max,
       category: AndroidNotificationCategory.reminder,
       audioAttributesUsage: AudioAttributesUsage.alarm,
+      playSound: true,
+      sound: const RawResourceAndroidNotificationSound('alarm_loud'),
       visibility: NotificationVisibility.private,
       fullScreenIntent: true,
       enableVibration: true,
