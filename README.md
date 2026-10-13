@@ -1,6 +1,6 @@
 # VistaCortex — Healthcare Management Platform
 
-> **Internal Documentation**: This document tracks project architecture, Task 4 & Task 5 implementations, DND bypass mechanics, and complete PC environment recovery. (Ignored from remote repository via `.gitignore`).
+> **Internal Documentation**: This document tracks project architecture, Task 4 & Task 5 implementations, DND bypass mechanics, Full-Screen Lock Screen Alarm implementation, and complete PC environment recovery. (Ignored from remote repository via `.gitignore`).
 
 ---
 
@@ -142,7 +142,71 @@ Because modern Android strictly protects user privacy, apps cannot silently disa
 
 ---
 
-## 7. How to Run the App
+## 7. Full-Screen Lock Screen Alarm Architecture
+
+Located in:
+* `android/app/src/main/AndroidManifest.xml`
+* `android/app/src/main/kotlin/com/example/vistacortex_mobile/MainActivity.kt`
+* `lib/core/services/notification_service.dart`
+
+### How Full-Screen Lock Screen Alarms Work:
+When a phone is locked or the screen is turned off (sleeping), standard notifications only appear as passive entries on the lock screen. For clinical adherence and emergency alarms, VistaCortex turns on the screen and presents the full-screen alarm directly over the lock screen:
+
+1. **Native Activity Lock Flags**:
+   In `AndroidManifest.xml` on `<activity android:name=".MainActivity">`:
+   ```xml
+   android:showWhenLocked="true"
+   android:turnScreenOn="true"
+   ```
+   In `MainActivity.kt`:
+   ```kotlin
+   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+       setShowWhenLocked(true)
+       setTurnScreenOn(true)
+   } else {
+       window.addFlags(
+           WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+           WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+       )
+   }
+   ```
+2. **Notification Configuration (`notification_service.dart`)**:
+   * `fullScreenIntent: true`
+   * `category: AndroidNotificationCategory.alarm`
+   * `audioAttributesUsage: AudioAttributesUsage.alarm`
+   * `priority: Priority.max`
+3. **Android 14+ System Permissions**:
+   * `android.permission.USE_FULL_SCREEN_INTENT`
+   * `android.permission.SCHEDULE_EXACT_ALARM`
+   * `android.permission.WAKE_LOCK`
+
+---
+
+## 8. Step-by-Step Testing Guide
+
+### A. Testing DND Bypass on the Emulator
+1. **Turn ON Do Not Disturb**: On the emulator, swipe down from the top twice and tap the **Do Not Disturb (⛔)** tile to activate DND.
+2. **Enable Channel Override**:
+   * In VistaCortex, go to the **Reminders** tab.
+   * Tap the **DND Shield Icon** in the top header.
+   * Tap **Open Channel DND Settings** under Approach 1.
+   * Toggle ON **"Bypass Do Not Disturb"**.
+3. **Trigger Alarm**: Schedule a dose 1-2 minutes ahead (or trigger low stock).
+4. **Verification**: The alarm banner pops up and `alarm_loud.wav` plays even though DND is strictly active.
+
+### B. Testing Full-Screen Lock Screen Alarm
+1. In VistaCortex, go to **Reminders** $\rightarrow$ tap **`+`** $\rightarrow$ **Add Medicine**.
+2. Look at the clock in the emulator's status bar (e.g. `11:20 PM`), and set the dose time **1 or 2 minutes ahead** (e.g. `11:22 PM`).
+3. Tap **Save**.
+4. **Immediately lock the screen**: Click the **Power button (⏻)** on the emulator toolbar (or press `Ctrl + F12`).
+5. **Verification**: In ~5 seconds:
+   * The dark emulator screen will **wake up and turn ON automatically**.
+   * It will **bypass the lock screen** and present the alarm alert.
+   * The loud alarm sound will blast.
+
+---
+
+## 9. How to Run the App
 
 ### Via Android Studio
 1. Open the project folder in Android Studio.
