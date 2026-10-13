@@ -1,113 +1,159 @@
-# VistaCortex - Medication Reminders & Local Notifications
+# VistaCortex — Healthcare Management Platform
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter)](https://flutter.dev)
-[![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart)](https://dart.dev)
-[![Riverpod](https://img.shields.io/badge/State%20Management-Riverpod%202.x-blue)](https://riverpod.dev)
-
-This document covers the implementation of **Task 4 (Health Adherence & UI)**, **Task 5 (Local Notifications & Background Scheduling)**, and **Do Not Disturb (DND) Critical Alert Bypass** for **VistaCortex**.
+> **Internal Documentation**: This document tracks project architecture, Task 4 & Task 5 implementations, DND bypass mechanics, and complete PC environment recovery. (Ignored from remote repository via `.gitignore`).
 
 ---
 
-## Features Implemented
+## 1. Project Overview & Architecture
 
-### 1. Daily Adherence Ring & Progress Score
-- **Gamified Progress**: Visual circular progress indicator showing the user's daily adherence score based on doses taken vs pending/skipped.
-- **Dynamic Updates**: Automatically recalculates when doses are marked as taken or skipped.
+**VistaCortex** is an enterprise-grade patient healthcare management application designed around clinical protocols, HIPAA compliance, and medication adherence.
 
-### 2. Daily Dose Logging & Action System
-- **Take/Skip Logic**: Users can mark doses as "Taken" (which deducts from their pill inventory) or "Skip" (with a mandatory reason like "Felt nauseous").
-- **Time-of-Day Filtering**: Doses are grouped by Morning, Afternoon, Evening, and Night.
-
-### 3. Multi-Dose Medication Scheduling
-- **Native Pickers**: Uses Flutter's native `showDatePicker` and `showTimePicker` for bulletproof date/time entry.
-- **Multiple Doses**: Users can select multiple times of day (e.g., Morning and Evening) for a single medication. The UI automatically spawns individual exact-time pickers for each selected dose block.
-
-### 4. Pill Inventory & Refill Supply Management
-- **Automatic Tracking**: The app calculates remaining days of supply (`total pills / daily doses`).
-- **Low Stock Alerts**: Visually highlights medicines with ≤ 5 days of supply.
-- **Refill Button**: Contextual "+30 Refill" button instantly updates inventory.
-- **Push Notification**: Automatically triggers a local notification warning when supply drops to ≤ 3 days.
-
-### 5. Diagnostic Tests & Labs
-- **Tests Tab**: Dedicated tab for tracking upcoming medical tests, labs, and scans.
-- **Smart Countdown**: Calculates days remaining (e.g., "In 3 Days", "Tomorrow", "Today", "Overdue").
-- **Celebratory UI**: Marking a test as complete triggers a green confetti success banner.
-
-### 6. Robust Local Notifications (Task 5)
-- **`flutter_local_notifications` v18**: Integrated with Android core library desugaring for full backwards compatibility.
-- **Timezone Support**: Initialized with local device timezones via `flutter_timezone` (with legacy fallback for `Asia/Calcutta` to `Asia/Kolkata`) to ensure alarms fire exactly on time.
-- **Cascading Test Reminders**: Tests schedule a reminder 3 days before. If that has already passed, it falls back to 1 day before, then the morning of the test.
-- **Pre-Alerts**: Medication reminders fire exactly 5 minutes *before* the scheduled dose time to give the user time to prepare.
-- **Immediate Fallback Alarm**: If a medicine is scheduled with a pre-alert that has already passed (e.g. less than 5 minutes away), an immediate one-off reminder triggers 5 seconds later so today's dose is never missed.
-- **Notification ID Safety**: Generates safe, collision-free integer IDs from object hashes to prevent reminders from overwriting each other.
-- **Automatic Cancellation**: Cancels scheduled test notifications immediately if the user marks the test as completed early.
-
-### 7. Do Not Disturb (DND) Bypass & Critical Medical Alerts (NEW)
-- **Audio Routing via Hardware Alarm Stream**: Configured the notification channel with `AudioAttributesUsage.alarm` and `AndroidNotificationCategory.alarm`. Under Android's default DND configuration, alarm streams are allowed through by default, ensuring life-critical medical reminders ring out loud even if standard notification sounds are silenced.
-- **Approach 1: Channel DND Override (Recommended)**: Built native Kotlin `MethodChannel` (`com.vistacortex/dnd_settings`) that launches Android's native `Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS` with 1 tap, allowing users to toggle on "Override Do Not Disturb" / "Bypass Do Not Disturb" for the `medical_emergency_channel`.
-- **Approach 2: System DND Policy Access**: Native integration launching `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS` with `isNotificationPolicyAccessGranted` inspection for hospital-grade emergency alerts.
-- **In-App DND Settings Modal**: Added a dedicated alert bell icon in the Reminders screen header that opens an interactive bottom sheet to easily configure both Channel Bypass and System DND Access.
-- **Full-Screen Wake Intent**: Configured `fullScreenIntent: true` and `USE_FULL_SCREEN_INTENT` permission to wake the phone display and trigger heads-up alerts over the lock screen.
-- **Pulsing Emergency Vibration**: Integrated custom tactile pulsing pattern `[0, 500, 200, 500, 200, 500]` for high-urgency notifications.
-- **HIPAA Lock-Screen Privacy**: Neutral notification copy (`NotificationVisibility.private`) protects patient confidentiality on lock screens while preserving loud audible reminders.
+### Tech Stack
+* **Framework**: Flutter 3.47.7 (Dart 3.13.5)
+* **State Management**: `flutter_riverpod: ^2.6.1` (immutable StateNotifier pattern)
+* **Cloud & Auth**: Firebase Auth, Firebase Core, Firebase Analytics, Google Sign-In, Firebase App Check
+* **Notifications & Background Alarms**: `flutter_local_notifications: ^18.0.1`, `timezone: ^0.9.4`, `flutter_timezone: ^3.0.1`
+* **Local Security & Persistence**: Encrypted SharedPreferences with HMAC SHA-256 cryptographic hash-chain audit ledger (HIPAA §164.312(b))
+* **Document Processing**: `pdfx: ^2.11.0`, Google ML Kit text recognition
 
 ---
 
-## Architecture & State
+## 2. PC Reset Recovery & Environment Setup (Completed)
 
-- **State Management**: `RemindersNotifier` (Riverpod) acts as the single source of truth. All UI actions dispatch methods to this provider.
-- **Encrypted Persistence**: All reminder and adherence mutations persist securely to offline encrypted storage (`FlutterSecureStorage`).
-- **Notification Service**: A Singleton `NotificationService` handles permission requests, initialization, channel registrations, and scheduling logic. Wrapped in fail-safe `try/catch` blocks at app launch to prevent crash-to-desktop scenarios.
-- **UI Context Awareness**: The main Floating Action Button (`+`) checks the active Tab. It opens the "Add Medicine" modal on the Doses tab, and the "Add Test" modal on the Tests tab.
+After the PC reset, the entire development toolchain was rebuilt and verified clean:
 
----
+### Git & Branch State
+* Cloned repository from `https://github.com/vistacortexadmin-blip/new-app-changes.git`.
+* Active working branch: **`task-4`** (Commit `36b7b4a`), which contains all of Task 4 and incorporates Task 5 (PR #1).
+* Aborted accidental merge conflicts and restored a 100% clean, verified working tree.
 
-## Getting Started
+### Flutter SDK Installation
+* Installed official stable release bundle at **`C:\src\flutter`**.
+* Added `C:\src\flutter\bin` permanently to Windows User `Path`.
+* Linked Android SDK (`C:\Users\ASUS\AppData\Local\Android\Sdk`) and Android Studio (`C:\Program Files\Android\Android Studio`).
+* Set permanent `JAVA_HOME` to `C:\Program Files\Android\Android Studio\jbr`.
+* Accepted all Android SDK licenses via `flutter doctor --android-licenses`.
 
-1. **Get Dependencies**:
-   ```bash
-   flutter pub get
-   ```
-
-2. **Run Application**:
-   ```bash
-   flutter run
-   ```
-   *(Note: The emulator or physical device must support Android 13+ Notification Permissions)*
-
----
-
-## Permissions (Android)
-- `POST_NOTIFICATIONS`: Required for Android 13+ to display notification banners.
-- `SCHEDULE_EXACT_ALARM`: Required for precise medicine reminders to fire exactly on time.
-- `RECEIVE_BOOT_COMPLETED`: Reschedules alarms automatically if the phone is rebooted.
-- `WAKE_LOCK`: Wakes the device CPU when a scheduled dose is due.
-- `VIBRATE`: Enables distinct emergency tactile vibration feedback.
-- `USE_FULL_SCREEN_INTENT`: Displays heads-up and full-screen alerts over the lock screen and DND.
-- `ACCESS_NOTIFICATION_POLICY`: Allows accessing and managing Do Not Disturb policies for critical medical reminders.
+### Android Toolchain & Gradle Fixes
+* **NDK Installation**: Resolved missing NDK build failure by installing **`ndk/28.2.13676358`** directly using the Android CLI (`android sdk install ndk/28.2.13676358`).
+* **SDK & CMake**: Installed Android SDK Platform 36 and CMake 3.22.1.
+* **Syntax Fix**: Removed accidental typo `u` on line 15 in `lib/main.dart`.
+* **Build Verification**: Ran `flutter build apk --debug`, which compiled cleanly into `build\app\outputs\flutter-apk\app-debug.apk`.
 
 ---
 
-## Security & Privacy Guardrails (CISO Assessment Phase 1-3)
+## 3. Pixel 9 Emulator Setup & Hardware Optimization
 
-A comprehensive security overhaul was conducted to address all critical findings from the CISO Security Assessment Report, hardening the app against unauthorized access, data leaks, and HIPAA violations:
+Configured the custom `Pixel_9` Android Virtual Device (`C:\Users\ASUS\.android\avd\Pixel_9.avd\config.ini`) with production performance tuning:
 
-### 1. Identity & Authentication Hardening
-- **Removed Critical Backdoor**: Stripped out the `createLocalSession` fallback in `AuthService` that allowed attackers to bypass Firebase and log in using just an email address (C2).
-- **Password Policies**: Increased minimum password length to 10 characters (M1).
-- **Anti-Enumeration**: Standardized Firebase login errors to a single generic message (*"Invalid credentials or sign-in failed"*) to prevent attackers from discovering if a patient's email exists in the system (M1).
+| Setting | Value | Rationale |
+| :--- | :--- | :--- |
+| **Hardware GPU** | `hw.gpu.enabled=yes` | Replaced slow CPU software rendering with dedicated NVIDIA GPU acceleration. |
+| **Physical Keyboard** | `hw.keyboard=yes` | Fixed issue where physical keyboard keystrokes were ignored inside the emulator. |
+| **RAM Allocation** | `4096 MB` (4 GB) | Upgraded from 2 GB to ensure smooth Android 17 operation. |
+| **CPU Cores** | `hw.cpu.ncore=8` | Upgraded from 4 cores for fast app startup and smooth animations. |
+| **Cameras** | `emulated` (front), `virtualscene` (back) | Provides valid camera feeds so camera-based flows do not crash. |
+| **Biometric Bypass** | N/A | Tapping **Cancel** on Google Account setup skips simulated Face Unlock. |
 
-### 2. PHI Protection & Privacy
-- **Encrypted Local Storage**: Migrated all offline patient data (Profile, Reminders, Reports, and Security Audit Ledger) from insecure `SharedPreferences` to `flutter_secure_storage` (Android Keystore / iOS Keychain) (C3).
-- **Secure Data Wipe**: Engineered a complete `storage.deleteAll()` command that reliably destroys all decrypted local PHI the moment a user signs out (C3).
-- **Analytics Sanitization**: Removed gender and other demographic tracking from Firebase Analytics events to prevent HIPAA violations (M5).
-- **Silent Telemetry**: Disabled internal `debugPrint` logging in release mode to prevent variable leaks to `logcat` on production devices (M5).
-- **Screenshot Blocking**: Enabled `FLAG_SECURE` on the Android `MainActivity` to block screenshots, screen recordings, and blank out the app preview in the OS recent-apps switcher (H5).
-- **Mock Data Cleaned**: Purged hardcoded clinical AI mock answers (H1) and fake medical records (H2) that risked contaminating real patient data or dispensing false medical advice.
+---
 
-### 3. Infrastructure & Architecture Security
-- **Firebase App Check**: Activated Firebase App Check with device attestation (Play Integrity on Android, DeviceCheck on iOS) to block botnets, emulators, and unauthorized API calls (M2).
-- **Secure File Export**: Replaced the clipboard copy mechanism for the Security Audit Log with a private temporary file export via the OS Share Sheet (`SharePlus`) (M6).
-- **Release Obfuscation**: Enabled R8/Proguard code shrinking and obfuscation in `build.gradle.kts` to protect intellectual property and deter reverse-engineering (H4).
-- **Timezone Precision**: Replaced UTC offset guessing with `flutter_timezone` to query the OS for the actual IANA timezone string, guaranteeing safe medication alerts across daylight saving boundaries (L5).
-- **UI Honesty**: Removed false claims about encryption and unbuilt security features from the Settings and Family Invite UI, and added placeholders for Account Deletion (H3/M7).
+## 4. Task 4: Medication Adherence & Pill Inventory UI
+
+Located in:
+* `lib/features/reminders/views/reminders_screen.dart`
+* `lib/features/reminders/providers/reminders_provider.dart`
+* `lib/features/reminders/models/reminder_model.dart`
+
+### Features Implemented:
+1. **Gamified Adherence Ring & Score**:
+   * Interactive circular progress indicator calculating the user's daily adherence percentage in real time (`taken doses / total scheduled doses`).
+   * Color-coded progress thresholds (green for high adherence, amber for pending).
+2. **Daily Dose Logging & Filter Chips**:
+   * Filters by time of day: **Morning**, **Afternoon**, **Evening**, and **Night**.
+   * One-tap **"Mark Taken"** action that logs the exact timestamp and automatically deducts 1 pill from inventory.
+   * **"Skip"** action requiring a mandatory clinical reason dialog (e.g., "Felt nauseous", "Doctor advised", "Fasting").
+3. **Multi-Dose Medication Creation**:
+   * Multi-slot time pickers allowing patients to schedule multiple doses per day (e.g., Morning and Night) for a single prescription.
+   * Native date pickers for treatment start date and duration.
+4. **Pill Inventory & Refills**:
+   * Real-time calculation of remaining days of supply (`total stock / daily doses`).
+   * Visual warning badges on medicines with $\le 5$ days of supply remaining.
+   * Smart Refill Bottom Sheet: Quick-add buttons (`+10`, `+30`, `+60`, `+90`) plus custom quantity input.
+   * **Exact Stock Override**: A dedicated pencil edit button allowing users to override and manually type in their exact pill count.
+5. **Diagnostic Tests Countdown Tracker**:
+   * Dedicated tab tracking upcoming laboratory scans, blood tests, and checkups.
+   * Smart countdown badges ("Today", "Tomorrow", "In X Days", "Overdue").
+   * Marking a test completed archives it and cancels its scheduled background alarms.
+6. **Flutter Framework Safety (`_dependents.isEmpty`)**:
+   * Prevented core Flutter framework crashes by ordering `Navigator.pop(context)` and snackbar notifications *before* dispatching synchronous Riverpod state changes.
+
+---
+
+## 5. Task 5: Local Notifications & Background Scheduling
+
+Located in:
+* `lib/core/services/notification_service.dart`
+* `android/app/src/main/AndroidManifest.xml`
+
+### Features Implemented:
+1. **Timezone-Aware Scheduling**:
+   * Integrated `timezone` and `flutter_timezone` to map native system timezones.
+   * Added `_legacyTimezoneMap` to translate deprecated timezone IDs (e.g., `Asia/Calcutta` $\rightarrow$ `Asia/Kolkata`).
+2. **Dose Pre-Alerts**:
+   * Medication alarms fire **5 minutes before** the scheduled dose time to give patients time to prepare water and meals.
+3. **Critical Low-Stock Push Alerts**:
+   * Taking a dose that drops inventory to $\le 3$ days immediately fires a local notification warning the patient to request a refill.
+4. **Cascading Diagnostic Test Reminders**:
+   * Upcoming medical tests trigger a reminder **3 days before**. If that time has passed, it cascades to **1 day before**, and finally the morning of the test.
+5. **State Synchronization & Cancellation**:
+   * Permanently deleting or editing a reminder automatically cancels and reschedules its exact background alarm IDs without collisions.
+
+---
+
+## 6. Do Not Disturb (DND) Bypass Architecture
+
+Located in:
+* `android/app/src/main/kotlin/com/example/vistacortex_mobile/MainActivity.kt`
+* `lib/core/services/notification_service.dart`
+* `android/app/src/main/AndroidManifest.xml`
+
+### How DND Bypass Works:
+Because modern Android strictly protects user privacy, apps cannot silently disable DND without user opt-in. VistaCortex implements a **dual-approach architecture**:
+
+```
+[Reminders Header DND Button]
+           │
+           ▼
+[DND Settings Modal Sheet]
+  ├── Approach 1: Channel DND Bypass (Medical Alarm Channel)
+  └── Approach 2: System Notification Policy Access
+```
+
+1. **Approach 1: Channel DND Override (`openChannelNotificationSettings`)**:
+   * **Channel ID**: `medical_emergency_channel_v2`
+   * **Channel Importance**: `Importance.max`
+   * **Sound & Stream**: Routes to `AudioAttributesUsage.alarm` with custom bundled audio `alarm_loud.wav`.
+   * **Native Bridge**: Uses `MethodChannel('com.vistacortex/dnd_settings')` in `MainActivity.kt` to trigger Android's `Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS`.
+   * **User Experience**: Tapping the button opens the Android settings page for this channel directly, where the user can toggle **"Override Do Not Disturb"**.
+2. **Approach 2: System DND Access (`openNotificationPolicyAccessSettings`)**:
+   * **Permission**: `android.permission.ACCESS_NOTIFICATION_POLICY` and `android.permission.USE_FULL_SCREEN_INTENT`.
+   * **Policy Check**: `notificationManager.isNotificationPolicyAccessGranted`.
+   * **User Experience**: Tapping the button opens `Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS` so the user can grant complete Do Not Disturb policy access.
+
+---
+
+## 7. How to Run the App
+
+### Via Android Studio
+1. Open the project folder in Android Studio.
+2. Select **`main.dart`** and device **`Pixel 9 (mobile)`**.
+3. Click the green **Play (▶️)** button (or press `Shift + F10`).
+
+### Via Terminal
+```powershell
+cd d:\Vistacortex\new-app-changes
+flutter run
+```
+
+### Direct Emulator Run
+The APK is already installed on the Pixel 9 emulator. You can swipe up into the app drawer on the emulator and tap the **VistaCortex** app icon directly.
