@@ -1,58 +1,66 @@
 # VistaCortex — Healthcare Management Platform
 
-> **Internal Documentation**: This document tracks project architecture, Task 4 & Task 5 implementations, DND bypass mechanics, Full-Screen Lock Screen Alarm implementation, and complete PC environment recovery. (Ignored from remote repository via `.gitignore`).
+> **Internal Engineering & Security Documentation**  
+> This document tracks the complete technical architecture, Task 4 & Task 5 implementations, CISO Security Assessment remediation, DND bypass mechanics, Full-Screen Lock Screen Alarm implementation, and the PC reset toolchain recovery.  
+> *(Note: This file is kept local and strictly ignored from the remote repository via `.gitignore`).*
 
 ---
 
 ## 1. Project Overview & Architecture
 
-**VistaCortex** is an enterprise-grade patient healthcare management application designed around clinical protocols, HIPAA compliance, and medication adherence.
+**VistaCortex** is an enterprise-grade patient healthcare management platform engineered around clinical safety protocols, HIPAA compliance, and medication adherence.
 
 ### Tech Stack
 * **Framework**: Flutter 3.47.7 (Dart 3.13.5)
-* **State Management**: `flutter_riverpod: ^2.6.1` (immutable StateNotifier pattern)
-* **Cloud & Auth**: Firebase Auth, Firebase Core, Firebase Analytics, Google Sign-In, Firebase App Check
+* **State Management**: `flutter_riverpod: ^2.6.1` (immutable StateNotifier architecture)
+* **Backend & Auth**: Firebase Auth, Firebase Core, Firebase Analytics, Google Sign-In, Firebase App Check
 * **Notifications & Background Alarms**: `flutter_local_notifications: ^18.0.1`, `timezone: ^0.9.4`, `flutter_timezone: ^3.0.1`
-* **Local Security & Persistence**: Encrypted SharedPreferences with HMAC SHA-256 cryptographic hash-chain audit ledger (HIPAA §164.312(b))
+* **Local Security & Persistence**: `flutter_secure_storage: ^9.2.2`, Encrypted SharedPreferences, HMAC SHA-256 cryptographic hash-chain audit ledger (HIPAA §164.312(b))
 * **Document Processing**: `pdfx: ^2.11.0`, Google ML Kit text recognition
 
 ---
 
-## 2. PC Reset Recovery & Environment Setup (Completed)
+## 2. PC Reset Recovery & Toolchain Setup (Completed)
 
-After the PC reset, the entire development toolchain was rebuilt and verified clean:
+Following a full PC reset, the entire local development toolchain was reconstructed and verified:
 
-### Git & Branch State
+### Git & Branch Integrity
 * Cloned repository from `https://github.com/vistacortexadmin-blip/new-app-changes.git`.
-* Active working branch: **`task-4`** (Commit `36b7b4a`), which contains all of Task 4 and incorporates Task 5 (PR #1).
-* Aborted accidental merge conflicts and restored a 100% clean, verified working tree.
+* Active working branch: **`task-4`** (Commit `36b7b4a`), which contains all Task 4 work and incorporates Task 5 (PR #1).
+* Aborted in-progress merge conflicts to restore a 100% clean, verified working tree.
 
 ### Flutter SDK Installation
-* Installed official stable release bundle at **`C:\src\flutter`**.
+* Downloaded and installed the official pinned stable release archive at **`C:\src\flutter`**.
 * Added `C:\src\flutter\bin` permanently to Windows User `Path`.
 * Linked Android SDK (`C:\Users\ASUS\AppData\Local\Android\Sdk`) and Android Studio (`C:\Program Files\Android\Android Studio`).
 * Set permanent `JAVA_HOME` to `C:\Program Files\Android\Android Studio\jbr`.
 * Accepted all Android SDK licenses via `flutter doctor --android-licenses`.
 
-### Android Toolchain & Gradle Fixes
-* **NDK Installation**: Resolved missing NDK build failure by installing **`ndk/28.2.13676358`** directly using the Android CLI (`android sdk install ndk/28.2.13676358`).
-* **SDK & CMake**: Installed Android SDK Platform 36 and CMake 3.22.1.
-* **Syntax Fix**: Removed accidental typo `u` on line 15 in `lib/main.dart`.
-* **Build Verification**: Ran `flutter build apk --debug`, which compiled cleanly into `build\app\outputs\flutter-apk\app-debug.apk`.
+### Android Studio IDE Configuration
+* Resolved the Marketplace download timeout for Flutter/Dart plugins by linking the SDK paths directly in Android Studio:
+  * **Flutter SDK Path**: `C:\src\flutter`
+  * **Dart SDK Path**: `C:\src\flutter\bin\cache\dart-sdk`
+* Enabled Dart support for the project, resolving the *"Dart SDK is not configured"* banner and enabling the Run/Debug controls.
+
+### Android Toolchain, NDK & Gradle Fixes
+* **NDK 28 Installation**: Resolved missing NDK build failures by installing **`ndk/28.2.13676358`** directly using the Android CLI tool (`android.exe sdk install ndk/28.2.13676358`).
+* **Platform 36 & CMake**: Automatically configured Android SDK Platform 36 and CMake 3.22.1.
+* **Syntax Error Fix**: Resolved accidental typo `);u` on line 15 in `lib/main.dart`.
+* **Build Verification**: Ran `flutter build apk --debug`, which compiled cleanly with exit code 0 (`build\app\outputs\flutter-apk\app-debug.apk`).
 
 ---
 
-## 3. Pixel 9 Emulator Setup & Hardware Optimization
+## 3. Pixel 9 Emulator Setup & Performance Optimization
 
 Configured the custom `Pixel_9` Android Virtual Device (`C:\Users\ASUS\.android\avd\Pixel_9.avd\config.ini`) with production performance tuning:
 
 | Setting | Value | Rationale |
 | :--- | :--- | :--- |
-| **Hardware GPU** | `hw.gpu.enabled=yes` | Replaced slow CPU software rendering with dedicated NVIDIA GPU acceleration. |
+| **Hardware GPU** | `hw.gpu.enabled=yes` | Replaced slow CPU software rendering with dedicated NVIDIA GPU hardware acceleration. |
 | **Physical Keyboard** | `hw.keyboard=yes` | Fixed issue where physical keyboard keystrokes were ignored inside the emulator. |
 | **RAM Allocation** | `4096 MB` (4 GB) | Upgraded from 2 GB to ensure smooth Android 17 operation. |
-| **CPU Cores** | `hw.cpu.ncore=8` | Upgraded from 4 cores for fast app startup and smooth animations. |
-| **Cameras** | `emulated` (front), `virtualscene` (back) | Provides valid camera feeds so camera-based flows do not crash. |
+| **CPU Cores** | `hw.cpu.ncore=8` | Upgraded from 4 cores for rapid app compilation and 60 FPS UI performance. |
+| **Cameras** | `emulated` (front), `virtualscene` (back) | Provides valid camera feeds to prevent camera-based flows from crashing. |
 | **Biometric Bypass** | N/A | Tapping **Cancel** on Google Account setup skips simulated Face Unlock. |
 
 ---
@@ -64,12 +72,12 @@ Located in:
 * `lib/features/reminders/providers/reminders_provider.dart`
 * `lib/features/reminders/models/reminder_model.dart`
 
-### Features Implemented:
-1. **Gamified Adherence Ring & Score**:
-   * Interactive circular progress indicator calculating the user's daily adherence percentage in real time (`taken doses / total scheduled doses`).
+### Key Implementations:
+1. **Gamified Daily Adherence Ring & Score**:
+   * Interactive circular progress gauge calculating the daily adherence score in real time (`taken doses / total scheduled doses`).
    * Color-coded progress thresholds (green for high adherence, amber for pending).
 2. **Daily Dose Logging & Filter Chips**:
-   * Filters by time of day: **Morning**, **Afternoon**, **Evening**, and **Night**.
+   * Filters doses by time of day: **Morning**, **Afternoon**, **Evening**, and **Night**.
    * One-tap **"Mark Taken"** action that logs the exact timestamp and automatically deducts 1 pill from inventory.
    * **"Skip"** action requiring a mandatory clinical reason dialog (e.g., "Felt nauseous", "Doctor advised", "Fasting").
 3. **Multi-Dose Medication Creation**:
@@ -95,7 +103,7 @@ Located in:
 * `lib/core/services/notification_service.dart`
 * `android/app/src/main/AndroidManifest.xml`
 
-### Features Implemented:
+### Key Implementations:
 1. **Timezone-Aware Scheduling**:
    * Integrated `timezone` and `flutter_timezone` to map native system timezones.
    * Added `_legacyTimezoneMap` to translate deprecated timezone IDs (e.g., `Asia/Calcutta` $\rightarrow$ `Asia/Kolkata`).
@@ -182,7 +190,33 @@ When a phone is locked or the screen is turned off (sleeping), standard notifica
 
 ---
 
-## 8. Step-by-Step Testing Guide
+## 8. CISO Security Assessment Report Remediation Matrix
+
+This codebase incorporates all fixes for the **CISO Security Assessment Report (Oct 6, 2026 by Koushik Reddy)**:
+
+| Finding ID | CISO Finding Description | Resolution Implemented in `task-4` | Status |
+| :---: | :--- | :--- | :---: |
+| **C1** | App doesn't build (merge conflict markers) | Resolved all conflict markers; NDK 28 & Platform 36 installed; `flutter analyze` passes with 0 errors. | ✅ **Fixed** |
+| **C2** | Development login fallback bypassed password | Removed `createLocalSession` completely from `auth_service.dart`. Strict Firebase Auth enforced. | ✅ **Fixed** |
+| **C3** | Patient data stored in plain text across accounts | Migrated patient profile, reminders, and reports to `FlutterSecureStorage`. Data is wiped on sign-out. | ✅ **Fixed** |
+| **H1** | AI assistant scripted answers & sample data | Wiped mock patient data from `seed_data.dart`; AI chat strictly references authenticated patient data. | ✅ **Fixed** |
+| **H2** | Audit log tamperable & fake "Priya Sharma" | Removed mock entries; implemented cryptographic SHA-256 HMAC hash chaining; removed misleading compliance tags. | ✅ **Fixed** |
+| **H3** | Security features only pretended to work | Connected genuine `sendPasswordResetEmail`; implemented real family caregiver persistence. | ✅ **Fixed** |
+| **H4** | Release builds unsigned & un-obfuscated | Enabled R8/Proguard code shrinking & obfuscation (`isMinifyEnabled = true`) in `app/build.gradle.kts`. | ✅ **Fixed** |
+| **H5** | Health details visible on lock screen / screen capture | Added `FLAG_SECURE` in `MainActivity.kt` to block screenshots; neutralized notification text to generic alerts. | ✅ **Fixed** |
+| **M1** | Weak 6-character passwords & user enumeration | Enforced $\ge 10$ character passwords and generic error messages in `login_screen.dart`. | ✅ **Fixed** |
+| **M2** | Firebase App Check disabled | Enabled `firebase_app_check` with Play Integrity / DeviceCheck in `main.dart`. | ✅ **Fixed** |
+| **M5** | Demographic data sent to analytics | Removed demographic tracking from `analytics_service.dart`; silenced debug logs in release builds. | ✅ **Fixed** |
+| **M6** | Audit logs copied to clipboard | Changed export in `security_audit_screen.dart` to write to a private file via system Share Sheet. | ✅ **Fixed** |
+| **L5** | Timezone guessed from UTC offset | Added `flutter_timezone` to query native device IANA timezone. | ✅ **Fixed** |
+| **B1** | Reminders lost on restart | Implemented persistent encrypted storage in `reminders_provider.dart`. | ✅ **Fixed** |
+| **B2** | Unstable reminder hash codes | Replaced with deterministic UUID hashing to prevent cross-restart cancellation failures. | ✅ **Fixed** |
+| **B3** | 5-minute pre-alert repeating time shift | Fixed calculation logic so daily repeating reminders maintain their exact scheduled hour/minute. | ✅ **Fixed** |
+| **B4** | Duplicate low-stock alerts | Debounced low-stock triggers in `reminders_provider.dart`. | ✅ **Fixed** |
+
+---
+
+## 9. Step-by-Step Testing Guide
 
 ### A. Testing DND Bypass on the Emulator
 1. **Turn ON Do Not Disturb**: On the emulator, swipe down from the top twice and tap the **Do Not Disturb (⛔)** tile to activate DND.
@@ -206,7 +240,7 @@ When a phone is locked or the screen is turned off (sleeping), standard notifica
 
 ---
 
-## 9. How to Run the App
+## 10. How to Run the App
 
 ### Via Android Studio
 1. Open the project folder in Android Studio.
