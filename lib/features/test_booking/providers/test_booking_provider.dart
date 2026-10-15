@@ -115,16 +115,44 @@ class TestBookingNotifier extends StateNotifier<TestBookingState> {
       confirmedOrders: [order, ...state.confirmedOrders],
     );
 
-    // Auto-create a reminder for the booked test.
+    // Auto-create a reminder for the booked test using the actual
+    // date + time slot so it appears in the Reminders "Tests" tab.
+    final scheduledDateTime = _parseSlotToDateTime(date, timeSlot);
+
     await ref.read(reminderRepositoryProvider).addReminder(
-          title: 'Lab test: ${test.name} @ ${provider.name}',
+          title: 'Lab test: ${test.name}',
           type: ReminderType.TEST,
-          scheduledTime: date,
+          scheduledTime: scheduledDateTime,
           source: ReminderSource.auto,
           relatedTestId: order.orderId,
         );
 
+    // Reset the Reminders filter so the auto-created test reminder
+    // is visible the moment the user opens the Reminders tab.
+    ref.read(reminderFilterProvider.notifier).state = null;
+
     return order;
+  }
+
+  /// Converts "10:30 AM - 11:00 AM" + date -> DateTime(date, 10, 30)
+  DateTime _parseSlotToDateTime(DateTime date, String slot) {
+    final startPart = slot.split('-').first.trim();
+    final regex = RegExp(r'(\d{1,2}):(\d{2})\s*(AM|PM)', caseSensitive: false);
+    final match = regex.firstMatch(startPart);
+
+    if (match == null) {
+      // Fallback: 9:00 AM on the chosen date
+      return DateTime(date.year, date.month, date.day, 9, 0);
+    }
+
+    var hour = int.parse(match.group(1)!);
+    final minute = int.parse(match.group(2)!);
+    final meridiem = match.group(3)!.toUpperCase();
+
+    if (meridiem == 'PM' && hour != 12) hour += 12;
+    if (meridiem == 'AM' && hour == 12) hour = 0;
+
+    return DateTime(date.year, date.month, date.day, hour, minute);
   }
 }
 

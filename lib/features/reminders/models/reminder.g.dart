@@ -30,13 +30,21 @@ class ReminderAdapter extends TypeAdapter<Reminder> {
       createdAt: fields[10] as DateTime,
       updatedAt: fields[11] as DateTime,
       isSynced: fields[12] == null ? false : fields[12] as bool,
+      isEnabled: fields[13] == null ? true : fields[13] as bool,
+      foodRelation: fields[14] as String?,
+      doctorName: fields[15] as String?,
+      soundLevel: fields[16] == null ? 'high' : fields[16] as String,
+      vibrationLevel: fields[17] == null ? 'medium' : fields[17] as String,
+      flashLed: fields[18] == null ? true : fields[18] as bool,
+      screenAlert: fields[19] == null ? false : fields[19] as bool,
+      showDetailsOnLockScreen: fields[20] == null ? false : fields[20] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, Reminder obj) {
     writer
-      ..writeByte(13)
+      ..writeByte(21)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -62,7 +70,23 @@ class ReminderAdapter extends TypeAdapter<Reminder> {
       ..writeByte(11)
       ..write(obj.updatedAt)
       ..writeByte(12)
-      ..write(obj.isSynced);
+      ..write(obj.isSynced)
+      ..writeByte(13)
+      ..write(obj.isEnabled)
+      ..writeByte(14)
+      ..write(obj.foodRelation)
+      ..writeByte(15)
+      ..write(obj.doctorName)
+      ..writeByte(16)
+      ..write(obj.soundLevel)
+      ..writeByte(17)
+      ..write(obj.vibrationLevel)
+      ..writeByte(18)
+      ..write(obj.flashLed)
+      ..writeByte(19)
+      ..write(obj.screenAlert)
+      ..writeByte(20)
+      ..write(obj.showDetailsOnLockScreen);
   }
 
   @override

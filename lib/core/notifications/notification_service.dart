@@ -1,76 +1,182 @@
-import 'dart:async';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   NotificationService._();
-  static final instance = NotificationService._();
 
-  final _local = FlutterLocalNotificationsPlugin();
-  StreamSubscription? _supabaseSub;
+  static final NotificationService instance = NotificationService._();
 
-  /// Called when user taps a notification. Step 8 will wire this to
-  /// navigate to the Reminders tab.
-  void Function(String? payload)? onNotificationTap;
+  final FlutterLocalNotificationsPlugin _local =
+      FlutterLocalNotificationsPlugin();
+
+  static const String _channelId = 'vistacortex_reminders_v2';
+  static const String _channelName = 'Health Reminders';
+  static const String _channelDesc =
+      'Medication, lab test and follow-up reminders';
+
+  bool _initialized = false;
+  Future<void>? _initializing;
+
+  // Deterministic notification ID. The same reminder ID always maps
+  // to the same integer, allowing updates and cancellation.
+  int _notificationId(String value) {
+    var hash = 0x811C9DC5;
+
+    for (final unit in value.codeUnits) {
+      hash = ((hash ^ unit) * 0x01000193) & 0x7FFFFFFF;
+    }
+
+    return hash;
+  }
 
   Future<void> init() async {
+    if (_initialized) return;
+
+    final existing = _initializing;
+    if (existing != null) {
+      await existing;
+      return;
+    }
+
+    final future = _initializeInternal();
+    _initializing = future;
+
     try {
-      tz.initializeTimeZones();
-      try {
-        final tzInfo = await FlutterTimezone.getLocalTimezone()
-            .timeout(const Duration(seconds: 3));
-        tz.setLocalLocation(tz.getLocation(tzInfo.identifier));
-      } catch (_) {
-        // Fallback: keep default UTC.
-      }
-
-      const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const ios = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
+      await future;
+      _initialized = true;
+      debugPrint('[Notifications] Initialization successful');
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'VistaCortex notifications',
+          context: ErrorDescription(
+            'while initializing notifications',
+          ),
+        ),
       );
-      const settings = InitializationSettings(android: android, iOS: ios);
-
-      await _local.initialize(
-        settings: settings,
-        onDidReceiveNotificationResponse: (response) {
-          onNotificationTap?.call(response.payload);
-        },
-        onDidReceiveBackgroundNotificationResponse:
-            onBackgroundNotificationResponse,
-      );
-
-      await requestPermissions();
-    } catch (e) {
-      // ignore: avoid_print
-      print('NotificationService.init failed: $e');
+      rethrow;
+    } finally {
+      _initializing = null;
     }
   }
 
-  Future<void> requestPermissions() async {
-    try {
-      final android = _local.resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
-      await android?.requestNotificationsPermission();
-      await android?.requestExactAlarmsPermission();
+  Future<void> _initializeInternal() async {
+    tz.initializeTimeZones();
 
-      final ios = _local.resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
-      await ios?.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
-    } catch (e) {
-      // ignore: avoid_print
-      print('NotificationService.requestPermissions failed: $e');
-    }
+    final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
+
+    const settings = InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      ),
+    );
+
+    await _local.initialize(settings: settings);
+
+    await _requestPermissions();
+    await _createChannel();
   }
+
+  Future<void> _requestPermissions() async {
+    final android = _local.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    final notificationsGranted =
+        await android?.requestNotificationsPermission();
+
+    debugPrint(
+      '[Notifications] Notification permission: $notificationsGranted',
+    );
+
+    final exactAlarmsAllowed = await android?.requestExactAlarmsPermission();
+
+    debugPrint(
+      '[Notifications] Exact alarm permission: $exactAlarmsAllowed',
+    );
+
+    final ios = _local.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
+
+    await ios?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+  }
+
+  Future<void> _createChannel() async {
+    final android = _local.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    await android?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDesc,
+        importance: Importance.max,
+        playSound: true,
+        enableVibration: true,
+      ),
+    );
+  }
+
+  NotificationDetails _buildDetails({
+    required String soundLevel,
+    required String vibrationLevel,
+  }) {
+    final importance = soundLevel == 'silent'
+        ? Importance.low
+        : soundLevel == 'low'
+            ? Importance.defaultImportance
+            : Importance.max;
+
+    final priority = soundLevel == 'silent'
+        ? Priority.low
+        : soundLevel == 'low'
+            ? Priority.defaultPriority
+            : Priority.high;
+
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDesc,
+        importance: importance,
+        priority: priority,
+        category: AndroidNotificationCategory.reminder,
+        playSound: soundLevel != 'silent',
+        enableVibration: vibrationLevel != 'off',
+        // Intentionally omit LED settings. Some Android/plugin
+        // combinations throw invalid_led_details when LED timings
+        // are missing or unsupported.
+        visibility: NotificationVisibility.private,
+        ticker: 'Health reminder',
+      ),
+      iOS: DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: soundLevel != 'silent',
+        interruptionLevel: soundLevel == 'high'
+            ? InterruptionLevel.timeSensitive
+            : InterruptionLevel.active,
+      ),
+    );
+  }
+
+  String _safeTitle(String title, bool showDetails) =>
+      showDetails ? title : 'Time for your reminder';
+
+  String _safeBody(String body, bool showDetails) =>
+      showDetails ? body : 'Open VistaCortex for details';
 
   Future<void> scheduleReminder({
     required String id,
@@ -78,110 +184,203 @@ class NotificationService {
     required String body,
     required DateTime when,
     bool daily = false,
+    String soundLevel = 'high',
+    String vibrationLevel = 'medium',
+    bool flashLed = false,
+    bool screenAlert = false,
+    bool showDetailsOnLockScreen = false,
+  }) async {
+    await init();
+
+    if (id.trim().isEmpty) {
+      throw ArgumentError.value(id, 'id', 'Must not be empty');
+    }
+
+    var scheduled = tz.TZDateTime.from(when, tz.local);
+    final now = tz.TZDateTime.now(tz.local);
+
+    if (daily) {
+      // Preserve the selected local time and find the next occurrence.
+      scheduled = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+        scheduled.hour,
+        scheduled.minute,
+        scheduled.second,
+      );
+
+      if (!scheduled.isAfter(now)) {
+        scheduled = tz.TZDateTime(
+          tz.local,
+          now.year,
+          now.month,
+          now.day + 1,
+          scheduled.hour,
+          scheduled.minute,
+          scheduled.second,
+        );
+      }
+
+      if (scheduled.difference(now).inSeconds < 300) {
+        throw ArgumentError(
+          'Daily reminders must be scheduled at least '
+          '5 minutes in the future.',
+        );
+      }
+    } else if (!scheduled.isAfter(now)) {
+      throw ArgumentError.value(
+        when,
+        'when',
+        'A one-time reminder must be in the future.',
+      );
+    }
+
+    final details = _buildDetails(
+      soundLevel: soundLevel,
+      vibrationLevel: vibrationLevel,
+    );
+
+    try {
+      await _scheduleWithFallback(
+        notificationId: _notificationId(id),
+        title: _safeTitle(title, showDetailsOnLockScreen),
+        body: _safeBody(body, showDetailsOnLockScreen),
+        scheduled: scheduled,
+        details: details,
+        daily: daily,
+        payload: id,
+      );
+
+      debugPrint(
+        '[Notifications] Scheduled id=$id at=$scheduled daily=$daily',
+      );
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'VistaCortex notifications',
+          context: ErrorDescription(
+            'while scheduling reminder $id',
+          ),
+        ),
+      );
+      rethrow;
+    }
+  }
+
+  Future<void> _scheduleWithFallback({
+    required int notificationId,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduled,
+    required NotificationDetails details,
+    required bool daily,
+    required String payload,
   }) async {
     try {
-      final scheduled = tz.TZDateTime.from(when, tz.local);
-
       await _local.zonedSchedule(
-        id: id.hashCode,
+        id: notificationId,
         title: title,
         body: body,
         scheduledDate: scheduled,
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'reminders_channel',
-            'Reminders',
-            channelDescription: 'Medication, test and follow-up reminders',
-            importance: Importance.max,
-            priority: Priority.high,
-            category: AndroidNotificationCategory.reminder,
-            ticker: 'Reminder',
-            playSound: true,
-            enableVibration: true,
-          ),
-          iOS: DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
-        ),
+        notificationDetails: details,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: daily ? DateTimeComponents.time : null,
-        payload: id,
+        payload: payload,
       );
-    } catch (e) {
-      // ignore: avoid_print
-      print('NotificationService.scheduleReminder failed for $id: $e');
+    } catch (exactError, exactStack) {
+      debugPrint(
+        '[Notifications] Exact scheduling failed: $exactError',
+      );
+
+      try {
+        await _local.zonedSchedule(
+          id: notificationId,
+          title: title,
+          body: body,
+          scheduledDate: scheduled,
+          notificationDetails: details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: daily ? DateTimeComponents.time : null,
+          payload: payload,
+        );
+
+        debugPrint('[Notifications] Inexact fallback scheduled');
+      } catch (fallbackError, fallbackStack) {
+        FlutterError.reportError(
+          FlutterErrorDetails(
+            exception: fallbackError,
+            stack: fallbackStack,
+            library: 'VistaCortex notifications',
+            context: ErrorDescription(
+              'Inexact scheduling failed: $fallbackError. '
+              'Exact scheduling error: $exactError\n$exactStack',
+            ),
+          ),
+        );
+        rethrow;
+      }
     }
   }
 
   Future<void> cancelReminder(String id) async {
-    try {
-      await _local.cancel(id: id.hashCode);
-    } catch (e) {
-      // ignore: avoid_print
-      print('NotificationService.cancelReminder failed for $id: $e');
-    }
+    await init();
+    await _local.cancel(id: _notificationId(id));
+    debugPrint('[Notifications] Cancelled reminder id=$id');
+  }
+
+  Future<void> cancelAll() async {
+    await init();
+    await _local.cancelAll();
+    debugPrint('[Notifications] Cancelled all notifications');
   }
 
   Future<void> showSystemNotification({
     required String id,
     required String title,
     required String body,
+    String soundLevel = 'high',
+    String vibrationLevel = 'medium',
+    bool flashLed = false,
+    bool screenAlert = false,
+    bool showDetailsOnLockScreen = false,
   }) async {
+    await init();
+
+    if (id.trim().isEmpty) {
+      throw ArgumentError.value(id, 'id', 'Must not be empty');
+    }
+
+    final details = _buildDetails(
+      soundLevel: soundLevel,
+      vibrationLevel: vibrationLevel,
+    );
+
     try {
       await _local.show(
-        id: id.hashCode,
-        title: title,
-        body: body,
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'system_channel',
-            'System alerts',
-            channelDescription: 'Report, test and account notifications',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
+        id: _notificationId(id),
+        title: _safeTitle(title, showDetailsOnLockScreen),
+        body: _safeBody(body, showDetailsOnLockScreen),
+        notificationDetails: details,
         payload: id,
       );
-    } catch (e) {
-      // ignore: avoid_print
-      print('NotificationService.showSystemNotification failed: $e');
+
+      debugPrint('[Notifications] Immediate notification displayed: $id');
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'VistaCortex notifications',
+          context: ErrorDescription(
+            'while displaying notification $id',
+          ),
+        ),
+      );
+      rethrow;
     }
   }
-
-  void listenToSupabaseNotifications(String userId) {
-    _supabaseSub?.cancel();
-
-    _supabaseSub = Supabase.instance.client
-        .from('notifications')
-        .stream(primaryKey: ['id'])
-        .eq('user_id', userId)
-        .order('created_at')
-        .listen((rows) {
-          for (final row in rows) {
-            final isRead = row['is_read'] == true;
-            if (!isRead) {
-              showSystemNotification(
-                id: row['id'] as String,
-                title: row['title'] as String? ?? 'Notification',
-                body: row['body'] as String? ?? '',
-              );
-            }
-          }
-        });
-  }
-
-  void dispose() {
-    _supabaseSub?.cancel();
-  }
-}
-
-/// Top-level, public, isolate entry point.
-/// Must NOT be private (no leading underscore) — the isolate can't find it.
-@pragma('vm:entry-point')
-void onBackgroundNotificationResponse(NotificationResponse response) {
-  // Step 8: route by payload to open Reminders tab on next launch.
 }

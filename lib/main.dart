@@ -1,15 +1,13 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'core/notifications/notification_service.dart';
 import 'features/reminders/models/reminder.dart';
-
-const supabaseUrl = 'https://qfvakepnvvvookhewqoc.supabase.co';
-const supabaseAnonKey = 'sb_publishable_zcv4CkzOP3cJBz2n2S5udg_5p9O8Fvg';
+import 'firebase_options.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,22 +19,45 @@ Future<void> main() async {
     ),
   );
 
-  // Hive
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('>>> Firebase ready');
+  } catch (e, st) {
+    print('>>> Firebase FAILED: $e');
+    print('>>> $st');
+  }
+
+  // Initialize Hive.
   await Hive.initFlutter();
-  Hive.registerAdapter(ReminderAdapter());
+
+  if (!Hive.isAdapterRegistered(ReminderAdapter().typeId)) {
+    Hive.registerAdapter(ReminderAdapter());
+  }
+
   await Hive.openBox<Reminder>('reminders');
-  // ignore: avoid_print
   print('>>> Hive ready');
 
-  // Supabase
-  await Supabase.initialize(url: supabaseUrl, publishableKey: supabaseAnonKey);
-  // ignore: avoid_print
-  print('>>> Supabase ready');
+  // Initialize local notifications before the app starts.
+  try {
+    debugPrint('[NOTIFY-TEST] Starting immediate notification test');
 
-  // Notifications
-  await NotificationService.instance.init();
-  // ignore: avoid_print
-  print('>>> Notifications ready');
+    await NotificationService.instance.showSystemNotification(
+      id: 'vistacortex-diagnostic-001',
+      title: 'VistaCortex test',
+      body: 'If you see this, notifications are working.',
+      showDetailsOnLockScreen: true,
+    );
 
-  runApp(const ProviderScope(child: VistaCortexApp()));
+    debugPrint('[NOTIFY-TEST] show() completed successfully');
+  } catch (error, stackTrace) {
+    debugPrint('[NOTIFY-TEST] FAILED: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
+  runApp(
+    const ProviderScope(
+      child: VistaCortexApp(),
+    ),
+  );
 }
